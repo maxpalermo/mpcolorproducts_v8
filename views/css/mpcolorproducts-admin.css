@@ -1,0 +1,187 @@
+/**
+ * mpcolorproducts-admin.css
+ * Stili Back-Office e Dialog per PrestaShop 8.2.x
+ */
+
+.mpcolorproducts-admin-wrapper {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e2e8f0;
+}
+
+/* PrestaShop 8 Native ps-switch styling */
+.ps-switch {
+    position: relative;
+    display: inline-block;
+    height: 32px;
+    width: 90px;
+    background-color: #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+    vertical-align: middle;
+    user-select: none;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.ps-switch input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    width: 50%;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
+    z-index: 2;
+}
+
+.ps-switch input[value="0"] {
+    left: 0;
+}
+
+.ps-switch input[value="1"] {
+    right: 0;
+}
+
+.ps-switch label {
+    position: relative;
+    display: inline-block;
+    float: left;
+    width: 50%;
+    height: 100%;
+    line-height: 32px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    margin: 0;
+    z-index: 1;
+    cursor: pointer;
+    transition: color 0.2s ease;
+    text-transform: uppercase;
+}
+
+.ps-switch input[value="1"]:checked~label[for*="_on"] {
+    color: #ffffff;
+}
+
+.ps-switch input[value="0"]:checked~label[for*="_off"] {
+    color: #ffffff;
+}
+
+.ps-switch .slide-button {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    height: 26px;
+    width: 40px;
+    background-color: #ef4444;
+    border-radius: 13px;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s ease;
+    z-index: 0;
+}
+
+.ps-switch input[value="1"]:checked~.slide-button {
+    transform: translateX(44px);
+    background-color: #10b981;
+}
+
+/* Modal Dialog HTML5 Moderno per PrestaShop 8.2 */
+.mpcolorproducts-dialog {
+    width: 90%;
+    max-width: 840px;
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
+    padding: 0;
+    background: #ffffff;
+}
+
+.mpcolorproducts-dialog::backdrop {
+    background: rgba(15, 23, 42, 0.65);
+    backdrop-filter: blur(4px);
+}
+
+.mpcolorproducts-dialog .dialog-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 24px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+}
+
+.mpcolorproducts-dialog .dialog-close-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    line-height: 1;
+    color: #64748b;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.mpcolorproducts-dialog .dialog-close-btn:hover {
+    color: #0f172a;
+}
+
+.mpcolorproducts-dialog .dialog-body {
+    padding: 24px;
+    max-height: 72vh;
+    overflow-y: auto;
+}
+
+.mpcolorproducts-dialog .dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    padding: 16px 24px;
+    background: #f8fafc;
+    border-top: 1px solid #e2e8f0;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+}
+
+.search-results-container {
+    position: relative;
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1px solid #cbd5e1;
+    border-top: none;
+    border-radius: 0 0 8px 8px;
+    background: #ffffff;
+    z-index: 1050;
+}
+
+.search-batch-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 14px;
+    background: #f8fafc;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.search-batch-table {
+    margin-bottom: 0;
+    font-size: 13px;
+}
+
+.search-batch-table td {
+    vertical-align: middle !important;
+}
+
+.product-thumb-preview {
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #e2e8f0;
+}
+
+.mt-4 {
+    margin-top: 2rem !important;
+}
+
+.mb-4 {
+    margin-bottom: 2rem !important;
+}

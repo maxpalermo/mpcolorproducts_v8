@@ -1,0 +1,27 @@
+{
+    "name": "mpsoft/mpcolorproducts",
+    "type": "prestashop-module",
+    "description": "Modulo PrestaShop per creare e mostrare linee di colore di prodotti correlati nel frontend (PrestaShop 8.2.x)",
+    "version": "2.0.0",
+    "authors": [
+        {
+            "name": "Massimiliano Palermo",
+            "email": "maxx.palermo@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=7.4 || >=8.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "MpSoft\\MpColorProducts\\": "src/"
+        }
+    },
+    "config": {
+        "preferred-install": "dist",
+        "prepend-autoloader": false
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
+

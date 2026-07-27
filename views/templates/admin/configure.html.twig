@@ -1,0 +1,240 @@
+{#
+ * PrestaShop Module: mpcolorproducts
+ * Admin Configuration View (Twig Template for PrestaShop 8.0+)
+ #}
+
+<div class="card mpcolorproducts-admin-wrapper shadow-sm mb-4">
+	<div class="card-header">
+		<div class="d-flex align-items-center">
+			<i class="material-icons text-primary me-2">settings</i>
+			<span class="m-0 font-weight-bold">
+				{{ 'Configurazione MP Linee Colore'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+			</span>
+		</div>
+	</div>
+
+	<div class="card-body p-4">
+		<div id="config-alert-container"></div>
+
+		<form id="mpcolorproducts-config-form" action="{{ admin_ajax_url }}" method="post" class="form-horizontal">
+
+			<div class="form-group row mb-4 align-items-center">
+				<label class="form-control-label col-lg-3 col-md-4 text-md-right font-weight-bold mb-0">
+					{{ 'Gruppo Attributi Colore Predefinito'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+				</label>
+				<div class="col-lg-7 col-md-8">
+					<select name="MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID" class="form-control custom-select form-select">
+						<option value="0">--
+							{{ 'Seleziona Gruppo Colore'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+							--</option>
+						{% for group in color_groups %}
+							<option value="{{ group.id_attribute_group }}" {% if selected_attr_group == group.id_attribute_group %} selected="selected" {% endif %}>
+								{{ group.name }}
+								(ID:
+								{{ group.id_attribute_group }})
+							</option>
+						{% endfor %}
+					</select>
+					<small class="form-text text-muted mt-1">
+						{{ 'Seleziona il gruppo di attributi PrestaShop utilizzato per definire i colori dei prodotti.'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+					</small>
+				</div>
+			</div>
+
+			<div class="form-group row mb-4 align-items-center">
+				<label class="form-control-label col-lg-3 col-md-4 text-md-right font-weight-bold mb-0">
+					{{ 'Modalità di Visualizzazione Swatch'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+				</label>
+				<div class="col-lg-7 col-md-8">
+					<select name="MPCOLORPRODUCTS_DISPLAY_MODE" class="form-control custom-select form-select">
+						<option value="product_image" {% if display_mode == 'product_image' %} selected="selected" {% endif %}>
+							{{ 'Immagine Copertina del Prodotto (Miniatura Circolare)'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+						</option>
+						<option value="color" {% if display_mode == 'color' %} selected="selected" {% endif %}>
+							{{ 'Colore Esadecimale / Texture Attributo'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+						</option>
+					</select>
+					<small class="form-text text-muted mt-1">
+						{{ 'Scegli se mostrare la miniatura dell\'immagine del prodotto target o il pallino colore esadecimale/texture.'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                    </small>
+                </div>
+            </div>
+
+            <div class="form-group row mb-4 align-items-center">
+                <label class="form-control-label col-lg-3 col-md-4 text-md-right font-weight-bold mb-0">
+                    {{ 'Tipo Immagine Miniatura'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                </label>
+                <div class="col-lg-7 col-md-8">
+                    <select name="MPCOLORPRODUCTS_IMAGE_TYPE" class="form-control custom-select form-select">
+                        {% for type in image_types %}
+                            <option value="{{ type.name }}" {% if image_type == type.name %}selected="selected"{% endif %}>
+                                {{ type.name }} ({{ type.width }}x{{ type.height }}px)
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group row mb-4 align-items-center mt-4">
+                <label class="form-control-label col-lg-3 col-md-4 text-md-right font-weight-bold mb-0">
+                    {{ 'Nascondi Prodotto Corrente'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                </label>
+                <div class="col-lg-7 col-md-8">
+                    <div class="ps-switch ps-switch-sm ps-switch-nolabel ps-switch-center">
+                        <input type="radio" name="MPCOLORPRODUCTS_HIDE_CURRENT" id="MPCOLORPRODUCTS_HIDE_CURRENT_off" value="0" {% if hide_current == 0 %}checked="checked"{% endif %}>
+                        <label for="MPCOLORPRODUCTS_HIDE_CURRENT_off">Off</label>
+                        <input type="radio" name="MPCOLORPRODUCTS_HIDE_CURRENT" id="MPCOLORPRODUCTS_HIDE_CURRENT_on" value="1" {% if hide_current == 1 %}checked="checked"{% endif %}>
+                        <label for="MPCOLORPRODUCTS_HIDE_CURRENT_on">On</label>
+                        <span class="slide-button"></span>
+                    </div>
+                    <small class="form-text text-muted mt-1 d-block">
+                        {{ 'Se attivato, lo swatch del prodotto attualmente visualizzato viene nascosto dalla lista.'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                    </small>
+                </div>
+            </div>
+
+
+            <hr class="my-4">
+
+            <div class="form-group row mb-0">
+                <div class="col-lg-7 col-md-8 offset-lg-3 offset-md-4">
+                    <button type="submit" id="btn-save-config" name="submitMpColorProductsConfig" class="btn btn-primary px-4 py-2">
+                        <i class="material-icons align-middle me-1">save</i>
+                        <span class="align-middle font-weight-bold">{{ 'Salva Impostazioni'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card mpcolorproducts-admin-wrapper shadow-sm">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center py-3">
+            <div class="d-flex align-items-center">
+                <i class="material-icons text-primary me-2" style="font-size: 24px;">list</i>
+                <span class="m-0 font-weight-bold">{{ 'Gestione Linee Colore Prodotti'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</span>
+            </div>
+            <button type="button" id="btn-open-new-line-modal" class="btn btn-success btn-sm px-3">
+                <i class="material-icons align-middle me-1">add</i>
+                <span class="align-middle font-weight-bold">{{ 'Nuova Linea Colore'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="card-body p-4">
+        <!-- Listato Bootstrap Table -->
+        <table id="mpcolorproducts-table"
+               data-toggle="table"
+               data-search="true"
+               data-pagination="true"
+               data-page-size="10"
+               data-page-list="[10, 25, 50, ALL]"
+               class="table table-striped table-hover align-middle">
+            <thead>
+                <tr>
+                    <th data-field="id_mpcolorproducts_group" data-sortable="true">{{ 'ID'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
+                    <th data-field="name" data-sortable="true">{{ 'Nome Linea'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
+                    <th data-field="total_products" data-sortable="true">{{ 'Nr Prodotti'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
+                    <th data-field="active" data-formatter="activeFormatter">{{ 'Stato'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
+                    <th data-field="date_upd" data-sortable="true">{{ 'Ultima Modifica'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
+                    <th data-formatter="actionsFormatter" data-align="center">{{ 'Azioni'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Dialog Moderno HTML5 per Creazione / Modifica Linea Colore -->
+<dialog id="color-line-dialog" class="mpcolorproducts-dialog">
+    <div class="dialog-header">
+        <h3 id="dialog-title" class="m-0 font-weight-bold">{{ 'Gestione Linea Colore'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</h3>
+        <button type="button" class="dialog-close-btn" id="dialog-close-top">&times;</button>
+    </div>
+    <div class="dialog-body">
+        <form id="color-line-form" class="form-horizontal">
+            <input type="hidden" id="line-id-group" value="0">
+
+            <div class="form-group row mb-3 align-items-center">
+                <label class="form-control-label col-lg-3 font-weight-bold mb-0">{{ 'Nome Linea'|trans({}, 'Modules.Mpcolorproducts.Admin') }} *</label>
+                <div class="col-lg-9">
+                    <input type="text" id="line-name" class="form-control" placeholder="{{ 'Es. Linea Grembiuli Workwear'|trans({}, 'Modules.Mpcolorproducts.Admin') }}" required>
+                </div>
+            </div>
+
+            <div class="form-group row mb-3 align-items-center">
+                <label class="form-control-label col-lg-3 font-weight-bold mb-0">{{ 'Stato'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</label>
+                <div class="col-lg-9">
+                    <select id="line-active" class="form-control custom-select form-select">
+                        <option value="1">{{ 'Attivo'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</option>
+                        <option value="0">{{ 'Disattivato'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</option>
+                    </select>
+                </div>
+            </div>
+
+            <hr class="my-4">
+            <h4 class="d-flex align-items-center font-weight-bold"><i class="material-icons me-2 text-primary">inventory_2</i> {{ 'Prodotti della Linea'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</h4>
+            <p class="text-muted fs-7 mb-3">{{ 'Cerca e aggiungi i prodotti indipendenti che compongono questa linea di colore.'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</p>
+
+            <div class="form-group row mb-3">
+                <div class="col-lg-12">
+                    <div class="input-group">
+                        <input type="text" id="product-search-input" class="form-control" placeholder="{{ 'Cerca prodotto per nome, ID o riferimento...'|trans({}, 'Modules.Mpcolorproducts.Admin') }}">
+                        <button type="button" id="btn-search-products" class="btn btn-outline-secondary">
+                            <i class="material-icons align-middle me-1">search</i> {{ 'Cerca'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                        </button>
+                    </div>
+                    <div id="search-results-dropdown" class="search-results-container"></div>
+                </div>
+            </div>
+
+            <!-- Tabella Prodotti Aggiunti alla Linea -->
+            <table class="table table-bordered table-striped align-middle" id="selected-products-table">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">{{ 'Foto'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
+                        <th style="width: 70px;">{{ 'ID'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
+                        <th>{{ 'Prodotto'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
+                        <th>{{ 'Riferimento'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
+                        <th style="width: 180px;">{{ 'ID Attributo Colore'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
+                        <th style="width: 110px;" class="text-center">{{ 'Azioni'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
+                    </tr>
+                </thead>
+                <tbody id="selected-products-tbody">
+                    <!-- Righe dinamiche inserite via template JS -->
+                </tbody>
+            </table>
+        </form>
+    </div>
+    <div class="dialog-footer">
+        <button type="button" class="btn btn-outline-secondary" id="btn-dialog-cancel">{{ 'Annulla'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</button>
+        <button type="button" class="btn btn-success" id="btn-dialog-save">
+            <i class="material-icons align-middle me-1">save</i> {{ 'Salva Linea'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+        </button>
+    </div>
+</dialog>
+
+<!-- Template HTML per Riga Prodotto selezionato -->
+<template id="product-row-template">
+    <tr data-product-id="">
+        <td class="text-center"><img src="" class="product-thumb-preview" width="36" height="36"></td>
+        <td class="product-id-td font-weight-bold"></td>
+        <td class="product-name-td"></td>
+        <td class="product-ref-td text-muted"></td>
+        <td>
+            <input type="number" class="form-control form-control-sm product-attr-input" placeholder="ID Attr" value="0">
+        </td>
+        <td class="text-center" style="white-space: nowrap;">
+            <a href="#" target="_blank" class="btn btn-outline-secondary btn-sm btn-preview-product me-1" title="{{ 'Anteprima Scheda Prodotto'|trans({}, 'Modules.Mpcolorproducts.Admin') }}">
+                <i class="material-icons align-middle">visibility</i>
+            </a>
+            <button type="button" class="btn btn-outline-danger btn-sm btn-remove-product" title="{{ 'Rimuovi'|trans({}, 'Modules.Mpcolorproducts.Admin') }}">
+                <i class="material-icons align-middle">delete</i>
+            </button>
+        </td>
+    </tr>
+</template>
+
+<script>
+    var adminAjaxUrl = "{{ admin_ajax_url|e('js') }}";
+</script>
