@@ -17,7 +17,7 @@
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
     margin: 8px 0 0 0 !important;
     padding: 0 !important;
     list-style: none !important;
@@ -34,8 +34,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 56px;
+    height: 56px;
     border-radius: 50%;
     border: 2px solid #e2e8f0;
     padding: 2px;

@@ -1,18 +1,11 @@
 /**
  * ColorSwatches.js
  * Componente Vanilla JS (ES6+) per la scheda prodotto frontend
- * Intercetta .product-variants, nasconde i gruppi colore nativi (es. group[14], group[15])
- * ed inserisce il blocco delle linee colore del modulo al loro posto.
+ * Intercetta .product-variants, nasconde i gruppi colore nativi (es. group[14], group[15]),
+ * posiziona il blocco delle linee colore al loro posto e rimuove eventuali duplicati a fondo pagina.
  */
 class ColorSwatches {
     constructor() {
-        this.container = document.getElementById('mpcolorproducts-block');
-        if (!this.container) return;
-
-        this.nameLabel = document.getElementById('mpcolorproducts-current-name');
-        this.swatches = this.container.querySelectorAll('.mpcolorproducts-swatch-item');
-        this.initialColorName = this.nameLabel ? this.nameLabel.textContent : '';
-
         this.init();
     }
 
@@ -23,18 +16,25 @@ class ColorSwatches {
     }
 
     bindEvents() {
-        if (this.swatches && this.swatches.length > 0) {
-            this.swatches.forEach(swatch => {
+        const container = document.querySelector('.mpcolorproducts-container');
+        if (!container) return;
+
+        const nameLabel = container.querySelector('#mpcolorproducts-current-name');
+        const swatches = container.querySelectorAll('.mpcolorproducts-swatch-item');
+        const initialColorName = nameLabel ? nameLabel.textContent : '';
+
+        if (swatches && swatches.length > 0) {
+            swatches.forEach(swatch => {
                 swatch.addEventListener('mouseenter', () => {
                     const colorName = swatch.getAttribute('data-color-name');
-                    if (colorName && this.nameLabel) {
-                        this.nameLabel.textContent = colorName;
+                    if (colorName && nameLabel) {
+                        nameLabel.textContent = colorName;
                     }
                 });
 
                 swatch.addEventListener('mouseleave', () => {
-                    if (this.nameLabel) {
-                        this.nameLabel.textContent = this.initialColorName;
+                    if (nameLabel) {
+                        nameLabel.textContent = initialColorName;
                     }
                 });
             });
@@ -42,15 +42,26 @@ class ColorSwatches {
     }
 
     /**
-     * Intercetta div.product-variants, nasconde i gruppi colore nativi (group[14], group[15] ecc.)
-     * ed inserisce il blocco del modulo al loro posto.
+     * Intercetta div.product-variants, nasconde i gruppi colore nativi (group[14], group[15] ecc.),
+     * inserisce il blocco del modulo al loro posto e rimuove i duplicati a fondo pagina (displayFooterProduct).
      */
     replaceColorAttributeGroup() {
+        const containers = document.querySelectorAll('.mpcolorproducts-container');
+        if (!containers || containers.length === 0) return;
+
+        // Il primo contenitore è quello principale che verrà posizionato vicino alle varianti
+        const primaryContainer = containers[0];
+
+        // Rimuoviamo immediatamente dal DOM tutti i contenitori duplicati (es. quelli generati da displayFooterProduct)
+        for (let i = 1; i < containers.length; i++) {
+            containers[i].remove();
+        }
+
         const productVariants = document.querySelector('.product-variants, .js-product-variants');
         
         // Se non troviamo il contenitore varianti principale, utilizziamo il fallback generale
         if (!productVariants) {
-            this.fallbackRelocate();
+            this.fallbackRelocate(primaryContainer);
             return;
         }
 
@@ -58,6 +69,11 @@ class ColorSwatches {
         let firstHiddenItem = null;
 
         variantItems.forEach(item => {
+            // Ignoriamo il nostro stesso blocco se già inserito
+            if (item.classList.contains('mpcolorproducts-container') || item.id === 'mpcolorproducts-block') {
+                return;
+            }
+
             // Verifica se l'item contiene input di colore o attributi group[14], group[15] o etichette COLORE / Rifiniture
             const hasColorInput = item.querySelector('input.input-color, input[name="group[14]"], input[name="group[15]"]');
             const labelEl = item.querySelector('.control-label, .attribute_label, label');
@@ -77,16 +93,16 @@ class ColorSwatches {
         });
 
         if (firstHiddenItem && firstHiddenItem.parentNode) {
-            firstHiddenItem.parentNode.insertBefore(this.container, firstHiddenItem);
+            firstHiddenItem.parentNode.insertBefore(primaryContainer, firstHiddenItem);
         } else {
-            productVariants.appendChild(this.container);
+            productVariants.appendChild(primaryContainer);
         }
     }
 
     /**
      * Fallback per temi personalizzati privi di .product-variants
      */
-    fallbackRelocate() {
+    fallbackRelocate(primaryContainer) {
         const targetElements = [
             document.querySelector('#attributes .attribute_fieldset'),
             document.querySelector('#attributes'),
@@ -102,7 +118,7 @@ class ColorSwatches {
         }
 
         if (target && target.parentNode) {
-            target.parentNode.insertBefore(this.container, target.nextSibling);
+            target.parentNode.insertBefore(primaryContainer, target.nextSibling);
         }
     }
 
