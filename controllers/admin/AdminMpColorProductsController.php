@@ -59,16 +59,24 @@ class AdminMpColorProductsController extends ModuleAdminController
         $idLang = (int) $this->context->language->id;
 
         $colorGroups = \MpSoft\MpColorProducts\Helpers\ColorLineHelper::getColorAttributeGroups($idLang);
+        $allAttrGroups = \MpSoft\MpColorProducts\Helpers\ColorLineHelper::getAllAttributeGroups($idLang);
         $groups = \MpSoft\MpColorProducts\Helpers\ColorLineHelper::getAllGroups();
-        $selectedAttrGroup = (int) Configuration::get('MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID');
+        $rawSelectedGroups = Configuration::get('MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID');
+        $selectedAttrGroups = !empty($rawSelectedGroups) ? array_map('intval', explode(',', $rawSelectedGroups)) : [];
+
         $displayMode = Configuration::get('MPCOLORPRODUCTS_DISPLAY_MODE');
         $hideCurrent = (int) Configuration::get('MPCOLORPRODUCTS_HIDE_CURRENT');
         $imageType = Configuration::get('MPCOLORPRODUCTS_IMAGE_TYPE');
         $imageTypes = ImageType::getImagesTypes('products');
 
+        $rawHiddenGroups = Configuration::get('MPCOLORPRODUCTS_HIDE_ATTR_GROUPS');
+        $hiddenAttrGroups = !empty($rawHiddenGroups) ? array_map('intval', explode(',', $rawHiddenGroups)) : [];
+
         $templateParams = [
             'color_groups' => $colorGroups,
-            'selected_attr_group' => $selectedAttrGroup,
+            'all_attribute_groups' => $allAttrGroups,
+            'hidden_attr_groups' => $hiddenAttrGroups,
+            'selected_attr_groups' => $selectedAttrGroups,
             'display_mode' => !empty($displayMode) ? $displayMode : 'product_image',
             'hide_current' => $hideCurrent,
             'image_type' => !empty($imageType) ? $imageType : 'small_default',
@@ -110,15 +118,27 @@ class AdminMpColorProductsController extends ModuleAdminController
 
     protected function postProcessConfig()
     {
-        $attrGroupId = (int) Tools::getValue('MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID');
+        $attrGroupIds = Tools::getValue('MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID');
+        if (!is_array($attrGroupIds)) {
+            $attrGroupIds = !empty($attrGroupIds) ? [(int) $attrGroupIds] : [];
+        }
+        $attrGroupStr = implode(',', array_map('intval', array_unique($attrGroupIds)));
+
         $displayMode = Tools::getValue('MPCOLORPRODUCTS_DISPLAY_MODE');
         $hideCurrent = (int) Tools::getValue('MPCOLORPRODUCTS_HIDE_CURRENT');
         $imageType = Tools::getValue('MPCOLORPRODUCTS_IMAGE_TYPE');
 
-        Configuration::updateValue('MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID', $attrGroupId);
+        $hideGroups = Tools::getValue('MPCOLORPRODUCTS_HIDE_ATTR_GROUPS');
+        if (!is_array($hideGroups)) {
+            $hideGroups = [];
+        }
+        $hideGroupStr = implode(',', array_map('intval', array_unique($hideGroups)));
+
+        Configuration::updateValue('MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID', $attrGroupStr);
         Configuration::updateValue('MPCOLORPRODUCTS_DISPLAY_MODE', $displayMode);
         Configuration::updateValue('MPCOLORPRODUCTS_HIDE_CURRENT', $hideCurrent);
         Configuration::updateValue('MPCOLORPRODUCTS_IMAGE_TYPE', $imageType);
+        Configuration::updateValue('MPCOLORPRODUCTS_HIDE_ATTR_GROUPS', $hideGroupStr);
 
         $this->confirmations[] = $this->l('Impostazioni aggiornate con successo.');
     }

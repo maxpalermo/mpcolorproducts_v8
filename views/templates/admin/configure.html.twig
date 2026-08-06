@@ -20,23 +20,36 @@
 
 			<div class="form-group row mb-4 align-items-center">
 				<label class="form-control-label col-lg-3 col-md-4 text-md-right font-weight-bold mb-0">
-					{{ 'Gruppo Attributi Colore Predefinito'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+					{{ 'Gruppi Attributi Colore Predefiniti'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
 				</label>
 				<div class="col-lg-7 col-md-8">
-					<select name="MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID" class="form-control custom-select form-select">
-						<option value="0">--
-							{{ 'Seleziona Gruppo Colore'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
-							--</option>
+					<select name="MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID[]" id="MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID" class="form-control custom-select form-select chosen" multiple="multiple" style="min-height: 120px;">
 						{% for group in color_groups %}
-							<option value="{{ group.id_attribute_group }}" {% if selected_attr_group == group.id_attribute_group %} selected="selected" {% endif %}>
-								{{ group.name }}
-								(ID:
-								{{ group.id_attribute_group }})
+							<option value="{{ group.id_attribute_group }}" {% if group.id_attribute_group in selected_attr_groups %} selected="selected" {% endif %}>
+								{{ group.name }} (ID: {{ group.id_attribute_group }})
 							</option>
 						{% endfor %}
 					</select>
 					<small class="form-text text-muted mt-1">
-						{{ 'Seleziona il gruppo di attributi PrestaShop utilizzato per definire i colori dei prodotti.'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+						{{ 'Seleziona uno o più gruppi attributi colore PrestaShop (es. Colore Principale, Colore Secondario, Rifiniture). Il modulo cercherà tutti gli attributi appartenenti a questi gruppi per comporre il nome del colore (es. "Nero / Rosso").'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+					</small>
+				</div>
+			</div>
+
+			<div class="form-group row mb-4 align-items-center">
+				<label class="form-control-label col-lg-3 col-md-4 text-md-right font-weight-bold mb-0">
+					{{ 'Gruppi Attributi da Cercare e Nascondere nel Frontend'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+				</label>
+				<div class="col-lg-7 col-md-8">
+					<select name="MPCOLORPRODUCTS_HIDE_ATTR_GROUPS[]" id="MPCOLORPRODUCTS_HIDE_ATTR_GROUPS" class="form-control custom-select form-select chosen" multiple="multiple" style="min-height: 140px;">
+						{% for group in all_attribute_groups %}
+							<option value="{{ group.id_attribute_group }}" {% if group.id_attribute_group in hidden_attr_groups %} selected="selected" {% endif %}>
+								{{ group.name }} (ID: {{ group.id_attribute_group }}){% if group.is_color_group %} - [Gruppo Colore]{% endif %}
+							</option>
+						{% endfor %}
+					</select>
+					<small class="form-text text-muted mt-1">
+						{{ 'Seleziona uno o più gruppi di attributi (es. Colore, Rifiniture, Fantasia) da cercare per comporre il nome del colore (es. "Nero / Rosso" o "Righe") e da nascondere automaticamente nel frontend.'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
 					</small>
 				</div>
 			</div>
@@ -177,14 +190,12 @@
             <p class="text-muted fs-7 mb-3">{{ 'Cerca e aggiungi i prodotti indipendenti che compongono questa linea di colore.'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</p>
 
             <div class="form-group row mb-3">
-                <div class="col-lg-12">
-                    <div class="input-group">
-                        <input type="text" id="product-search-input" class="form-control" placeholder="{{ 'Cerca prodotto per nome, ID o riferimento...'|trans({}, 'Modules.Mpcolorproducts.Admin') }}">
-                        <button type="button" id="btn-search-products" class="btn btn-outline-secondary">
-                            <i class="material-icons align-middle me-1">search</i> {{ 'Cerca'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
-                        </button>
-                    </div>
+                <div class="d-flex justify-content-start align-items-center gap-2 position-relative" style="position: relative; width: 100%;">
                     <div id="search-results-dropdown" class="search-results-container"></div>
+                    <input type="text" id="product-search-input" class="form-control" placeholder="{{ 'Cerca prodotto per nome, ID o riferimento...'|trans({}, 'Modules.Mpcolorproducts.Admin') }}">
+                    <button type="button" id="btn-search-products" class="btn btn-outline-secondary">
+                        <i class="material-icons align-middle me-1">search</i> {{ 'Cerca'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                    </button>
                 </div>
             </div>
 

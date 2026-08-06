@@ -4,7 +4,7 @@
  *}
 
 {if !empty($mp_colors_list)}
-<div class="clearfix product-variants-item mpcolorproducts-container" id="mpcolorproducts-block">
+<div class="clearfix product-variants-item mpcolorproducts-container" id="mpcolorproducts-block" data-hide-attr-groups="{$mp_hide_attr_groups|escape:'html':'UTF-8'}">
     <span class="control-label">{l s='Colore' d='Modules.Mpcolorproducts.Shop'}:
         <span class="mpcolorproducts-selected-name" id="mpcolorproducts-current-name">{$mp_current_color_name|escape:'html':'UTF-8'}</span>
     </span>

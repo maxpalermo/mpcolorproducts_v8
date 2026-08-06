@@ -60,6 +60,7 @@ class MpColorProducts extends \MpSoft\MpColorProducts\Module\ModuleTemplate
         Configuration::updateValue('MPCOLORPRODUCTS_DISPLAY_MODE', 'product_image');
         Configuration::updateValue('MPCOLORPRODUCTS_HIDE_CURRENT', 0);
         Configuration::updateValue('MPCOLORPRODUCTS_IMAGE_TYPE', 'small_default');
+        Configuration::updateValue('MPCOLORPRODUCTS_HIDE_ATTR_GROUPS', '14,15');
 
         $hooks = [
             'displayProductButtons',
@@ -85,6 +86,7 @@ class MpColorProducts extends \MpSoft\MpColorProducts\Module\ModuleTemplate
         Configuration::deleteByName('MPCOLORPRODUCTS_DISPLAY_MODE');
         Configuration::deleteByName('MPCOLORPRODUCTS_HIDE_CURRENT');
         Configuration::deleteByName('MPCOLORPRODUCTS_IMAGE_TYPE');
+        Configuration::deleteByName('MPCOLORPRODUCTS_HIDE_ATTR_GROUPS');
 
         return parent::uninstall() && $this->uninstallModuleTab($this->adminClassName);
     }
@@ -178,11 +180,14 @@ class MpColorProducts extends \MpSoft\MpColorProducts\Module\ModuleTemplate
             }
         }
 
+        $hideAttrGroups = Configuration::get('MPCOLORPRODUCTS_HIDE_ATTR_GROUPS');
+
         $this->smarty->assign([
             'mp_colors_list' => $colorItems,
             'mp_display_mode' => !empty($displayMode) ? $displayMode : 'product_image',
             'mp_current_color_name' => $currentColorName,
             'mp_hide_current' => $hideCurrent,
+            'mp_hide_attr_groups' => !empty($hideAttrGroups) ? $hideAttrGroups : '',
         ]);
 
         return $this->display(__FILE__, 'views/templates/hook/product_colors.tpl');

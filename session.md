@@ -128,6 +128,9 @@ const optionValue = selectedRadio ? parseInt(selectedRadio.value, 10) : 0;
 
 ### Frontend & Intercettazione Varianti Prodotto
 - Intercettare il div `.product-variants.js-product-variants`.
-- Individuare e **nascondere** i gruppi colore nativi (es. `name="group[14]"`, `name="group[15]"`, `input.input-color`, `COLORE`, `Rifiniture`).
-- Inserire il blocco del modulo `#mpcolorproducts-block` (`.product-variants-item`) al loro posto.
+- **Configurazione Gruppi Attributo Colore (Select Multipla Chosen BO)**: L'amministratore seleziona in una select multipla Chosen (`MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID[]`) tutti i gruppi attributi che definiscono i colori delle varianti (es. *Colore Principale*, *Colore Secondario*, *Rifiniture*).
+- **Scansione e Composizione Automatica Nomi**: Al caricamento di ogni prodotto, il modulo scansiona tutti gli attributi appartenenti a questi gruppi selezionati. Se trova un singolo attributo (es. *"Righe"*), mostra quello; se ne trova più di uno (es. *Colore: Nero* + *Rifinitura: Rosso*), compone automaticamente il nome variante unico (**"Nero / Rosso"**).
+- Trasmettere gli ID selezionati al frontend tramite attributo HTML `data-hide-attr-groups="14,15,3"`.
+- In `ColorSwatches.js`, scansionare `.product-variants-item` nascondendo tutti i selettori nativi corrispondenti a tutti gli ID selezionati ed inserire il selettore del modulo al loro posto.
+- Rimuovere automaticamente dal DOM i blocchi duplicati generati da hook secondari (es. `displayFooterProduct`).
 - Gestire il riposizionamento dinamico riascoltando gli eventi AJAX di PrestaShop 8 (`prestashop.on('updatedProduct', ...)`).

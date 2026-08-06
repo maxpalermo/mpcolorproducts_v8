@@ -89,6 +89,26 @@ class ColorLineHelper
     }
 
     /**
+     * Rileva tutti i gruppi attributo del negozio per la selezione multipla BO
+     *
+     * @param int $idLang
+     * @return array
+     */
+    public static function getAllAttributeGroups($idLang)
+    {
+        $dbPrefix = _DB_PREFIX_;
+        $idLang = (int) $idLang;
+
+        $sql = "SELECT ag.`id_attribute_group`, agl.`name`, ag.`is_color_group`
+                FROM `{$dbPrefix}attribute_group` ag
+                INNER JOIN `{$dbPrefix}attribute_group_lang` agl
+                    ON (ag.`id_attribute_group` = agl.`id_attribute_group` AND agl.`id_lang` = {$idLang})
+                ORDER BY agl.`name` ASC";
+
+        return \Db::getInstance()->executeS($sql) ?: [];
+    }
+
+    /**
      * Recupera le varianti di colore della linea a cui appartiene un dato prodotto
      *
      * @param int $idProduct
@@ -146,16 +166,8 @@ class ColorLineHelper
             $itemIdProduct = (int) $item['id_product'];
             $itemIdAttribute = (int) $item['id_attribute'];
 
-            // Se id_attribute non è stato forzato nella tabella, rileviamolo dalle combinazioni del prodotto
-            if ($itemIdAttribute <= 0 && $configuredAttrGroup > 0) {
-                $itemIdAttribute = self::detectProductColorAttribute($itemIdProduct, $configuredAttrGroup);
-            }
-
-            // Otteniamo informazioni sull'attributo (nome colore e hex)
-            $colorInfo = self::getAttributeColorInfo($itemIdAttribute, $idLang);
-
-            // Determiniamo se esiste un'immagine di texture in img/co/{id_attribute}.jpg
-            $textureUrl = self::getAttributeTextureUrl($itemIdAttribute);
+            // Otteniamo informazioni estese sull'attributo (colore, fantasia, rifiniture o combinati)
+            $colorInfo = self::getProductColorInfoExtended($itemIdProduct, $itemIdAttribute, $idLang, $configuredAttrGroup);
 
             // Otteniamo l'immagine di copertina del prodotto
             $coverImageUrl = self::getProductCoverUrl($itemIdProduct, $link);
@@ -165,11 +177,11 @@ class ColorLineHelper
 
             $result[] = [
                 'id_product' => $itemIdProduct,
-                'id_attribute' => $itemIdAttribute,
+                'id_attribute' => $colorInfo['id_attribute'],
                 'product_name' => $item['product_name'],
                 'color_name' => !empty($colorInfo['name']) ? $colorInfo['name'] : $item['product_name'],
                 'color_hex' => !empty($colorInfo['color']) ? $colorInfo['color'] : '#ffffff',
-                'texture_url' => $textureUrl,
+                'texture_url' => $colorInfo['texture_url'],
                 'cover_image_url' => $coverImageUrl,
                 'product_url' => $productUrl,
                 'is_current' => ($itemIdProduct === $idProduct),
@@ -180,7 +192,113 @@ class ColorLineHelper
     }
 
     /**
-     * Rileva l'id_attribute colore di un prodotto per un determinato gruppo attributi (MAI usare LIMIT con getValue)
+     * Rileva le informazioni estese sul colore/fantasia/rifiniture di un prodotto
+     *
+     * @param int $idProduct
+     * @param int $idAttribute
+     * @param int $idLang
+     * @param int $configuredAttrGroup
+     * @return array
+     */
+    public static function getProductColorInfoExtended($idProduct, $idAttribute, $idLang, $configuredAttrGroup = 0)
+    {
+        $idProduct = (int) $idProduct;
+        $idAttribute = (int) $idAttribute;
+        $idLang = (int) $idLang;
+
+        $dbPrefix = _DB_PREFIX_;
+
+        // 1. Raccogliamo tutti gli ID dei gruppi attributo configurati sia in MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID che in MPCOLORPRODUCTS_HIDE_ATTR_GROUPS
+        $rawColorGroups = \Configuration::get('MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID');
+        $rawHideGroups = \Configuration::get('MPCOLORPRODUCTS_HIDE_ATTR_GROUPS');
+
+        $colorGroupIds = !empty($rawColorGroups) ? array_map('intval', explode(',', $rawColorGroups)) : [];
+        $hideGroupIds = !empty($rawHideGroups) ? array_map('intval', explode(',', $rawHideGroups)) : [];
+
+        $configuredGroups = array_unique(array_merge($colorGroupIds, $hideGroupIds));
+        if ($configuredAttrGroup > 0) {
+            $configuredGroups[] = (int) $configuredAttrGroup;
+        }
+        $configuredGroups = array_values(array_unique(array_filter($configuredGroups, function($id) { return $id > 0; })));
+
+        // 2. Scansioniamo le combinazioni del prodotto per tutti i gruppi configurati ed uniamo tutti i nomi (es. "Jeans / Monocolore")
+        if (!empty($configuredGroups)) {
+            $idsList = implode(',', $configuredGroups);
+            $sqlCombo = "SELECT DISTINCT al.`name`, a.`color`, a.`id_attribute`, a.`id_attribute_group`
+                         FROM `{$dbPrefix}product_attribute` pa
+                         INNER JOIN `{$dbPrefix}product_attribute_combination` pac
+                             ON (pa.`id_product_attribute` = pac.`id_product_attribute`)
+                         INNER JOIN `{$dbPrefix}attribute` a
+                             ON (pac.`id_attribute` = a.`id_attribute`)
+                         INNER JOIN `{$dbPrefix}attribute_lang` al
+                             ON (a.`id_attribute` = al.`id_attribute` AND al.`id_lang` = {$idLang})
+                         WHERE pa.`id_product` = {$idProduct}
+                           AND a.`id_attribute_group` IN ({$idsList})
+                         ORDER BY FIELD(a.`id_attribute_group`, {$idsList}), a.`id_attribute` ASC";
+
+            $rows = \Db::getInstance()->executeS($sqlCombo);
+            if (!empty($rows)) {
+                $names = [];
+                $firstColor = '';
+                $firstAttrId = 0;
+                $firstTextureUrl = '';
+
+                foreach ($rows as $r) {
+                    if (!empty($r['name']) && !in_array($r['name'], $names)) {
+                        $names[] = $r['name'];
+                    }
+                    if (empty($firstColor) && !empty($r['color'])) {
+                        $firstColor = $r['color'];
+                    }
+                    if ($firstAttrId <= 0) {
+                        $firstAttrId = (int) $r['id_attribute'];
+                    }
+                    if (empty($firstTextureUrl)) {
+                        $tex = self::getAttributeTextureUrl((int) $r['id_attribute']);
+                        if (!empty($tex)) {
+                            $firstTextureUrl = $tex;
+                        }
+                    }
+                }
+
+                if (!empty($names)) {
+                    return [
+                        'id_attribute' => ($idAttribute > 0) ? $idAttribute : $firstAttrId,
+                        'name' => implode(' / ', $names),
+                        'color' => !empty($firstColor) ? $firstColor : '#ffffff',
+                        'texture_url' => !empty($firstTextureUrl) ? $firstTextureUrl : self::getAttributeTextureUrl($firstAttrId),
+                    ];
+                }
+            }
+        }
+
+        // 3. Fallback: se è stato specificato un id_attribute manuale
+        if ($idAttribute > 0) {
+            $colorInfo = self::getAttributeColorInfo($idAttribute, $idLang);
+            if (!empty($colorInfo['name'])) {
+                return [
+                    'id_attribute' => $idAttribute,
+                    'name' => $colorInfo['name'],
+                    'color' => !empty($colorInfo['color']) ? $colorInfo['color'] : '#ffffff',
+                    'texture_url' => self::getAttributeTextureUrl($idAttribute),
+                ];
+            }
+        }
+
+        // 4. Fallback automatico
+        $detectedAttrId = self::detectProductColorAttribute($idProduct, $configuredAttrGroup);
+        $colorInfo = self::getAttributeColorInfo($detectedAttrId, $idLang);
+
+        return [
+            'id_attribute' => $detectedAttrId,
+            'name' => !empty($colorInfo['name']) ? $colorInfo['name'] : '',
+            'color' => !empty($colorInfo['color']) ? $colorInfo['color'] : '#ffffff',
+            'texture_url' => self::getAttributeTextureUrl($detectedAttrId),
+        ];
+    }
+
+    /**
+     * Rileva l'id_attribute colore o variante alternativa di un prodotto provando su più livelli
      *
      * @param int $idProduct
      * @param int $idAttributeGroup
@@ -192,17 +310,73 @@ class ColorLineHelper
         $idProduct = (int) $idProduct;
         $idAttributeGroup = (int) $idAttributeGroup;
 
-        $sql = "SELECT pac.`id_attribute`
-                FROM `{$dbPrefix}product_attribute` pa
-                INNER JOIN `{$dbPrefix}product_attribute_combination` pac
-                    ON (pa.`id_product_attribute` = pac.`id_product_attribute`)
-                INNER JOIN `{$dbPrefix}attribute` a
-                    ON (pac.`id_attribute` = a.`id_attribute`)
-                WHERE pa.`id_product` = {$idProduct}
-                  AND a.`id_attribute_group` = {$idAttributeGroup}";
+        // 1. Gruppo attributo predefinito
+        if ($idAttributeGroup > 0) {
+            $sql = "SELECT pac.`id_attribute`
+                    FROM `{$dbPrefix}product_attribute` pa
+                    INNER JOIN `{$dbPrefix}product_attribute_combination` pac
+                        ON (pa.`id_product_attribute` = pac.`id_product_attribute`)
+                    INNER JOIN `{$dbPrefix}attribute` a
+                        ON (pac.`id_attribute` = a.`id_attribute`)
+                    WHERE pa.`id_product` = {$idProduct}
+                      AND a.`id_attribute_group` = {$idAttributeGroup}";
 
-        $val = \Db::getInstance()->getValue($sql);
-        return $val ? (int) $val : 0;
+            $val = \Db::getInstance()->getValue($sql);
+            if ($val) {
+                return (int) $val;
+            }
+        }
+
+        // 2. Gruppi attributi configurati per l'oscuramento (es. Fantasia, Rifiniture, ecc.)
+        $rawHideGroups = \Configuration::get('MPCOLORPRODUCTS_HIDE_ATTR_GROUPS');
+        if (!empty($rawHideGroups)) {
+            $hideGroupIds = array_map('intval', explode(',', $rawHideGroups));
+            $hideGroupIds = array_filter($hideGroupIds, function($id) { return $id > 0; });
+
+            if (!empty($hideGroupIds)) {
+                $idsList = implode(',', $hideGroupIds);
+                $sqlHide = "SELECT pac.`id_attribute`
+                            FROM `{$dbPrefix}product_attribute` pa
+                            INNER JOIN `{$dbPrefix}product_attribute_combination` pac
+                                ON (pa.`id_product_attribute` = pac.`id_product_attribute`)
+                            INNER JOIN `{$dbPrefix}attribute` a
+                                ON (pac.`id_attribute` = a.`id_attribute`)
+                            WHERE pa.`id_product` = {$idProduct}
+                              AND a.`id_attribute_group` IN ({$idsList})";
+
+                $valHide = \Db::getInstance()->getValue($sqlHide);
+                if ($valHide) {
+                    return (int) $valHide;
+                }
+            }
+        }
+
+        // 3. Gruppi marcati come is_color_group = 1
+        $sqlColorGroup = "SELECT pac.`id_attribute`
+                          FROM `{$dbPrefix}product_attribute` pa
+                          INNER JOIN `{$dbPrefix}product_attribute_combination` pac
+                              ON (pa.`id_product_attribute` = pac.`id_product_attribute`)
+                          INNER JOIN `{$dbPrefix}attribute` a
+                              ON (pac.`id_attribute` = a.`id_attribute`)
+                          INNER JOIN `{$dbPrefix}attribute_group` ag
+                              ON (a.`id_attribute_group` = ag.`id_attribute_group`)
+                          WHERE pa.`id_product` = {$idProduct}
+                            AND ag.`is_color_group` = 1";
+
+        $valColorGroup = \Db::getInstance()->getValue($sqlColorGroup);
+        if ($valColorGroup) {
+            return (int) $valColorGroup;
+        }
+
+        // 4. Primo attributo di qualsiasi combinazione del prodotto
+        $sqlAny = "SELECT pac.`id_attribute`
+                   FROM `{$dbPrefix}product_attribute` pa
+                   INNER JOIN `{$dbPrefix}product_attribute_combination` pac
+                       ON (pa.`id_product_attribute` = pac.`id_product_attribute`)
+                   WHERE pa.`id_product` = {$idProduct}";
+
+        $valAny = \Db::getInstance()->getValue($sqlAny);
+        return $valAny ? (int) $valAny : 0;
     }
 
     /**

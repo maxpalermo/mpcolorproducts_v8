@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<module>
+    <name>mpcolorproducts</name>
+    <displayName><![CDATA[MP Linee Colore Prodotti]]></displayName>
+    <version><![CDATA[2.0.0]]></version>
+    <description><![CDATA[Raggruppa prodotti indipendenti in linee colore visibili nella scheda prodotto frontend]]></description>
+    <author><![CDATA[Massimiliano Palermo]]></author>
+    <tab><![CDATA[administration]]></tab>
+    <is_configurable>1</is_configurable>
+    <need_instance>0</need_instance>
+</module>

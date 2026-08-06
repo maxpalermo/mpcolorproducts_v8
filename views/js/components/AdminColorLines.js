@@ -29,21 +29,26 @@ class AdminColorLines {
         configForm.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const attrGroupId = configForm.querySelector('[name="MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID"]').value;
+            const attrGroupSelect = configForm.querySelector('[name="MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID[]"]');
+            const selectedAttrGroups = attrGroupSelect ? Array.from(attrGroupSelect.selectedOptions).map(opt => opt.value) : [];
             const displayMode = configForm.querySelector('[name="MPCOLORPRODUCTS_DISPLAY_MODE"]').value;
             const hideCurrentRadio = configForm.querySelector('[name="MPCOLORPRODUCTS_HIDE_CURRENT"]:checked');
             const hideCurrent = hideCurrentRadio ? parseInt(hideCurrentRadio.value, 10) : 0;
             const imageType = configForm.querySelector('[name="MPCOLORPRODUCTS_IMAGE_TYPE"]').value;
+
+            const hideGroupsSelect = configForm.querySelector('[name="MPCOLORPRODUCTS_HIDE_ATTR_GROUPS[]"]');
+            const selectedHideGroups = hideGroupsSelect ? Array.from(hideGroupsSelect.selectedOptions).map(opt => opt.value) : [];
 
             const btnSave = document.getElementById('btn-save-config');
             if (btnSave) btnSave.disabled = true;
 
             const res = await this.makeAjaxRequest({
                 action: 'saveConfig',
-                MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID: attrGroupId,
+                'MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID[]': selectedAttrGroups,
                 MPCOLORPRODUCTS_DISPLAY_MODE: displayMode,
                 MPCOLORPRODUCTS_HIDE_CURRENT: hideCurrent,
-                MPCOLORPRODUCTS_IMAGE_TYPE: imageType
+                MPCOLORPRODUCTS_IMAGE_TYPE: imageType,
+                'MPCOLORPRODUCTS_HIDE_ATTR_GROUPS[]': selectedHideGroups
             });
 
             if (btnSave) btnSave.disabled = false;
@@ -116,6 +121,16 @@ class AdminColorLines {
                 }
             });
         }
+
+        // Chiudi il menu a discesa dei risultati di ricerca al click esterno
+        document.addEventListener('click', (e) => {
+            if (this.searchResultsDropdown && 
+                !this.searchResultsDropdown.contains(e.target) && 
+                e.target !== this.searchInput && 
+                e.target !== document.getElementById('btn-search-products')) {
+                this.searchResultsDropdown.innerHTML = '';
+            }
+        });
     }
 
     /**
@@ -126,7 +141,11 @@ class AdminColorLines {
         bodyParams.append('ajax', '1');
         
         for (const [key, value] of Object.entries(params)) {
-            bodyParams.append(key, value);
+            if (Array.isArray(value)) {
+                value.forEach(val => bodyParams.append(key, val));
+            } else {
+                bodyParams.append(key, value);
+            }
         }
 
         try {
@@ -181,7 +200,7 @@ class AdminColorLines {
 
                 if (Array.isArray(res.products)) {
                     res.products.forEach(p => {
-                        this.addProductRow(p.id_product, p.product_name, p.reference, p.cover_url, p.id_attribute, false, p.product_url);
+                        this.addProductRow(p.id_product, p.product_name, p.reference, p.ean13 || '', p.cover_url, p.id_attribute, false, p.product_url);
                     });
                 }
             }
@@ -237,6 +256,7 @@ class AdminColorLines {
                             <th style="width: 40px;">Foto</th>
                             <th>ID & Prodotto</th>
                             <th>Riferimento</th>
+                            <th>EAN13</th>
                         </tr>
                     </thead>
                     <tbody id="search-products-list-tbody">
@@ -253,7 +273,20 @@ class AdminColorLines {
 
             res.products.forEach(p => {
                 const tr = document.createElement('tr');
-                const isAlreadyAdded = !!this.productsTbody.querySelector(`tr[data-product-id="${p.id_product}"]`);
+                const eanVal = (p.ean13 || '').trim();
+                const attrIdVal = p.detected_attribute_id || 0;
+
+                // Verifica duplicati: discerni per EAN13 se presente, altrimenti per id_product + detected_attribute_id (MAI per reference)
+                const isAlreadyAdded = Array.from(this.productsTbody.querySelectorAll('tr[data-product-id]')).some(existingTr => {
+                    const trEan = (existingTr.getAttribute('data-ean13') || '').trim();
+                    const trIdP = parseInt(existingTr.getAttribute('data-product-id'), 10);
+                    const trAttrId = parseInt(existingTr.querySelector('.product-attr-input').value, 10) || 0;
+
+                    if (eanVal !== '' && trEan !== '' && eanVal === trEan) {
+                        return true;
+                    }
+                    return (trIdP === p.id_product && trAttrId === attrIdVal);
+                });
                 
                 tr.innerHTML = `
                     <td class="text-center">
@@ -261,9 +294,10 @@ class AdminColorLines {
                                data-id="${p.id_product}" 
                                data-name="${p.name.replace(/"/g, '&quot;')}" 
                                data-ref="${(p.reference || '').replace(/"/g, '&quot;')}" 
+                               data-ean="${(p.ean13 || '').replace(/"/g, '&quot;')}" 
                                data-cover="${p.cover_url || ''}" 
                                data-url="${p.product_url || ''}" 
-                               data-attr="${p.detected_attribute_id || 0}"
+                               data-attr="${attrIdVal}"
                                ${isAlreadyAdded ? 'disabled title="Già presente nella linea"' : ''}>
                     </td>
                     <td>
@@ -274,6 +308,7 @@ class AdminColorLines {
                         ${isAlreadyAdded ? '<span class="label label-warning" style="margin-left: 5px;">Già presente</span>' : ''}
                     </td>
                     <td>${p.reference || '-'}</td>
+                    <td>${p.ean13 || '-'}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -308,11 +343,12 @@ class AdminColorLines {
                     const idP = parseInt(cb.getAttribute('data-id'), 10);
                     const name = cb.getAttribute('data-name');
                     const ref = cb.getAttribute('data-ref');
+                    const ean = cb.getAttribute('data-ean');
                     const cover = cb.getAttribute('data-cover');
                     const url = cb.getAttribute('data-url');
                     const attr = parseInt(cb.getAttribute('data-attr'), 10);
 
-                    const added = this.addProductRow(idP, name, ref, cover, attr, false, url);
+                    const added = this.addProductRow(idP, name, ref, ean, cover, attr, false, url);
                     if (added) addedCount++;
                 });
 
@@ -326,14 +362,27 @@ class AdminColorLines {
     }
 
     /**
-     * Aggiunge una riga prodotto alla linea (evitando duplicati)
+     * Aggiunge una riga prodotto alla linea (discernendo per EAN13 ed id_product + id_attribute)
      */
-    addProductRow(idProduct, name, ref, coverUrl, attrId = 0, showAlertOnDuplicate = true, productUrl = '') {
-        // Evitiamo duplicati nella stessa linea
-        const existing = this.productsTbody.querySelector(`tr[data-product-id="${idProduct}"]`);
+    addProductRow(idProduct, name, ref, ean13 = '', coverUrl = '', attrId = 0, showAlertOnDuplicate = true, productUrl = '') {
+        const targetEan = (ean13 || '').trim();
+        const trs = Array.from(this.productsTbody.querySelectorAll('tr[data-product-id]'));
+
+        // Discerni per EAN13 se presente, altrimenti per id_product + id_attribute. MAI per reference.
+        const existing = trs.find(tr => {
+            const trEan = (tr.getAttribute('data-ean13') || '').trim();
+            const trIdP = parseInt(tr.getAttribute('data-product-id'), 10);
+            const trAttrId = parseInt(tr.querySelector('.product-attr-input').value, 10) || 0;
+
+            if (targetEan !== '' && trEan !== '' && targetEan === trEan) {
+                return true;
+            }
+            return (trIdP === idProduct && trAttrId === attrId);
+        });
+
         if (existing) {
             if (showAlertOnDuplicate) {
-                alert('Il prodotto è già stato inserito in questa linea.');
+                alert('Il prodotto/combinazione è già stato inserito in questa linea.');
             }
             return false;
         }
@@ -341,6 +390,7 @@ class AdminColorLines {
         const clone = this.rowTemplate.content.cloneNode(true);
         const tr = clone.querySelector('tr');
         tr.setAttribute('data-product-id', idProduct);
+        tr.setAttribute('data-ean13', targetEan);
 
         const img = tr.querySelector('.product-thumb-preview');
         img.src = coverUrl || '';
@@ -350,6 +400,9 @@ class AdminColorLines {
 
         tr.querySelector('.product-name-td').textContent = name;
         tr.querySelector('.product-ref-td').textContent = ref || '-';
+
+        const eanTd = tr.querySelector('.product-ean-td');
+        if (eanTd) eanTd.textContent = targetEan || '-';
 
         const btnPreview = tr.querySelector('.btn-preview-product');
         if (btnPreview) {

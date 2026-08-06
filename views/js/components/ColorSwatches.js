@@ -1,8 +1,8 @@
 /**
  * ColorSwatches.js
  * Componente Vanilla JS (ES6+) per la scheda prodotto frontend
- * Intercetta .product-variants, nasconde i gruppi colore nativi (es. group[14], group[15]),
- * posiziona il blocco delle linee colore al loro posto e rimuove eventuali duplicati a fondo pagina.
+ * Intercetta .product-variants, nasconde i gruppi attributo configurati nel BO (group[<id>])
+ * posiziona il blocco delle linee colore al loro posto e rimuove eventuali duplicati dal DOM.
  */
 class ColorSwatches {
     constructor() {
@@ -42,8 +42,8 @@ class ColorSwatches {
     }
 
     /**
-     * Intercetta div.product-variants, nasconde i gruppi colore nativi (group[14], group[15] ecc.),
-     * inserisce il blocco del modulo al loro posto e rimuove i duplicati a fondo pagina (displayFooterProduct).
+     * Intercetta div.product-variants, nasconde i gruppi attributi configurati (group[<id>])
+     * ed inserisce il blocco del modulo al loro posto.
      */
     replaceColorAttributeGroup() {
         const containers = document.querySelectorAll('.mpcolorproducts-container');
@@ -52,10 +52,17 @@ class ColorSwatches {
         // Il primo contenitore è quello principale che verrà posizionato vicino alle varianti
         const primaryContainer = containers[0];
 
-        // Rimuoviamo immediatamente dal DOM tutti i contenitori duplicati (es. quelli generati da displayFooterProduct)
+        // Rimuoviamo dal DOM tutti i contenitori duplicati (es. generati da displayFooterProduct)
         for (let i = 1; i < containers.length; i++) {
             containers[i].remove();
         }
+
+        // Recuperiamo gli ID dei gruppi attributo da nascondere dall'attributo data-hide-attr-groups
+        const hideAttrGroupsStr = primaryContainer.getAttribute('data-hide-attr-groups') || '';
+        const configuredHideGroupIds = hideAttrGroupsStr
+            .split(',')
+            .map(id => id.trim())
+            .filter(id => id.length > 0);
 
         const productVariants = document.querySelector('.product-variants, .js-product-variants');
         
@@ -74,17 +81,33 @@ class ColorSwatches {
                 return;
             }
 
-            // Verifica se l'item contiene input di colore o attributi group[14], group[15] o etichette COLORE / Rifiniture
-            const hasColorInput = item.querySelector('input.input-color, input[name="group[14]"], input[name="group[15]"]');
-            const labelEl = item.querySelector('.control-label, .attribute_label, label');
-            const labelText = labelEl ? labelEl.textContent.trim().toLowerCase() : '';
+            let isConfiguredGroup = false;
 
-            const isColorOrFinishGroup = hasColorInput ||
-                labelText.includes('colore') ||
-                labelText.includes('color') ||
-                labelText.includes('rifiniture');
+            // 1. Verifica dinamica degli ID attributi configurati nel Back-Office (group[<id>])
+            if (configuredHideGroupIds.length > 0) {
+                for (const groupId of configuredHideGroupIds) {
+                    const groupInput = item.querySelector(
+                        `input[name="group[${groupId}]"], select[name="group[${groupId}]"], input[data-product-attribute="${groupId}"]`
+                    );
+                    if (groupInput) {
+                        isConfiguredGroup = true;
+                        break;
+                    }
+                }
+            }
 
-            if (isColorOrFinishGroup) {
+            // 2. Fallback di ricerca per etichetta o input.input-color se non sono stati trovati match sugli ID
+            if (!isConfiguredGroup) {
+                const hasColorInput = item.querySelector('input.input-color');
+                const labelEl = item.querySelector('.control-label, .attribute_label, label');
+                const labelText = labelEl ? labelEl.textContent.trim().toLowerCase() : '';
+
+                if (hasColorInput || labelText.includes('colore') || labelText.includes('color') || labelText.includes('rifiniture')) {
+                    isConfiguredGroup = true;
+                }
+            }
+
+            if (isConfiguredGroup) {
                 item.style.display = 'none';
                 if (!firstHiddenItem) {
                     firstHiddenItem = item;
