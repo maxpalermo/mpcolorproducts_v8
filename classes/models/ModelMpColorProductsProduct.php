@@ -23,6 +23,7 @@ class ModelMpColorProductsProduct extends ObjectModel
     public $id_product;
     public $id_attribute;
     public $position;
+    public $features;
 
     public static $definition = [
         'table' => 'mpcolorproducts_product',
@@ -48,6 +49,11 @@ class ModelMpColorProductsProduct extends ObjectModel
             'position' => [
                 'type' => self::TYPE_INT,
                 'validate' => 'isUnsignedInt',
+                'required' => false,
+            ],
+            'features' => [
+                'type' => self::TYPE_STRING,
+                'validate' => 'isString',
                 'required' => false,
             ],
         ],

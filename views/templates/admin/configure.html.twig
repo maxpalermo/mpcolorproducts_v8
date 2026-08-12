@@ -106,6 +106,42 @@
                 </div>
             </div>
 
+            <div class="form-group row mb-4 align-items-center mt-4">
+                <label class="form-control-label col-lg-3 col-md-4 text-md-right font-weight-bold mb-0">
+                    {{ 'Filtro Caratteristiche FO (Cotone/Elastan)'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                </label>
+                <div class="col-lg-7 col-md-8">
+                    <div class="ps-switch ps-switch-sm ps-switch-nolabel ps-switch-center">
+                        <input type="radio" name="MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER" id="MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER_off" value="0" {% if enable_feature_filter == 0 %}checked="checked"{% endif %}>
+                        <label for="MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER_off">Off</label>
+                        <input type="radio" name="MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER" id="MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER_on" value="1" {% if enable_feature_filter == 1 %}checked="checked"{% endif %}>
+                        <label for="MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER_on">On</label>
+                        <span class="slide-button"></span>
+                    </div>
+                    <small class="form-text text-muted mt-1 d-block">
+                        {{ 'Se attivato, nella scheda prodotto frontend viene mostrato prima il selettore delle Caratteristiche ed al cambio della selezione si aggiornano via AJAX i colori disponibili.'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                    </small>
+                </div>
+            </div>
+
+            <div class="form-group row mb-4 align-items-center mt-4">
+                <label class="form-control-label col-lg-3 col-md-4 text-md-right font-weight-bold mb-0">
+                    {{ 'Mostra tutti i colori'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                </label>
+                <div class="col-lg-7 col-md-8">
+                    <div class="ps-switch ps-switch-sm ps-switch-nolabel ps-switch-center">
+                        <input type="radio" name="MPCOLORPRODUCTS_SHOW_ALL_COLORS" id="MPCOLORPRODUCTS_SHOW_ALL_COLORS_off" value="0" {% if show_all_colors == 0 %}checked="checked"{% endif %}>
+                        <label for="MPCOLORPRODUCTS_SHOW_ALL_COLORS_off">Off</label>
+                        <input type="radio" name="MPCOLORPRODUCTS_SHOW_ALL_COLORS" id="MPCOLORPRODUCTS_SHOW_ALL_COLORS_on" value="1" {% if show_all_colors == 1 %}checked="checked"{% endif %}>
+                        <label for="MPCOLORPRODUCTS_SHOW_ALL_COLORS_on">On</label>
+                        <span class="slide-button"></span>
+                    </div>
+                    <small class="form-text text-muted mt-1 d-block">
+                        {{ 'Se attivo, quando si mostra un prodotto vengono mostrati tutti i colori della linea anziché filtrare inizialmente per le caratteristiche del prodotto corrente.'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                    </small>
+                </div>
+            </div>
+
 
             <hr class="my-4">
 
@@ -207,7 +243,15 @@
                         <th style="width: 70px;">{{ 'ID'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
                         <th>{{ 'Prodotto'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
                         <th>{{ 'Riferimento'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
-                        <th style="width: 180px;">{{ 'ID Attributo Colore'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
+                        <th style="width: 290px;">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span>{{ 'Caratteristiche'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</span>
+                                <button type="button" id="btn-apply-first-features-all" class="btn btn-outline-primary btn-xs py-0 px-2" title="{{ 'Applica le caratteristiche del primo prodotto a tutti gli altri'|trans({}, 'Modules.Mpcolorproducts.Admin') }}" style="font-size: 11px;">
+                                    <i class="material-icons text-sm align-middle" style="font-size: 13px;">content_copy</i> {{ 'Applica 1° a tutti'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                                </button>
+                            </div>
+                        </th>
+                        <th style="width: 140px;">{{ 'Colore'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
                         <th style="width: 110px;" class="text-center">{{ 'Azioni'|trans({}, 'Modules.Mpcolorproducts.Admin') }}</th>
                     </tr>
                 </thead>
@@ -232,8 +276,21 @@
         <td class="product-id-td font-weight-bold"></td>
         <td class="product-name-td"></td>
         <td class="product-ref-td text-muted"></td>
-        <td>
-            <input type="number" class="form-control form-control-sm product-attr-input" placeholder="ID Attr" value="0">
+        <td class="product-features-td">
+            <div class="d-flex align-items-center gap-1">
+                <select class="form-control form-control-sm product-features-select chosen" multiple="multiple" style="width: 100%;">
+                </select>
+                <button type="button" class="btn btn-outline-primary btn-sm btn-copy-features-row ms-1" title="{{ 'Applica le caratteristiche di questo prodotto a tutti gli altri'|trans({}, 'Modules.Mpcolorproducts.Admin') }}" style="padding: 3px 6px;">
+                    <i class="material-icons align-middle" style="font-size: 15px;">content_copy</i>
+                </button>
+            </div>
+        </td>
+        <td class="product-color-td align-middle">
+            <span class="product-color-badge d-inline-flex align-items-center" style="gap: 6px;">
+                <span class="product-color-swatch-circle" style="width: 18px; height: 18px; border-radius: 50%; border: 1px solid #cbd5e1; display: inline-block; flex-shrink: 0; background-size: cover; background-position: center;"></span>
+                <span class="product-color-name-text font-weight-bold" style="font-size: 12.5px; color: #0f172a;"></span>
+            </span>
+            <input type="hidden" class="product-attr-input" value="0">
         </td>
         <td class="text-center" style="white-space: nowrap;">
             <a href="#" target="_blank" class="btn btn-outline-secondary btn-sm btn-preview-product me-1" title="{{ 'Anteprima Scheda Prodotto'|trans({}, 'Modules.Mpcolorproducts.Admin') }}">

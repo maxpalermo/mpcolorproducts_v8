@@ -46,6 +46,7 @@ class ColorLineHelper
             `id_product` INT(11) UNSIGNED NOT NULL,
             `id_attribute` INT(11) UNSIGNED NOT NULL DEFAULT 0,
             `position` INT(11) UNSIGNED NOT NULL DEFAULT 0,
+            `features` TEXT NULL,
             PRIMARY KEY (`id_mpcolorproducts_group`, `id_product`),
             KEY `id_product` (`id_product`)
         ) ENGINE={$engine} DEFAULT CHARSET=utf8;";
@@ -143,7 +144,7 @@ class ColorLineHelper
         }
 
         // 2. Troviamo tutti i prodotti appartenenti alla linea
-        $sqlLineProducts = "SELECT cp.`id_product`, cp.`id_attribute`, cp.`position`,
+        $sqlLineProducts = "SELECT cp.`id_product`, cp.`id_attribute`, cp.`position`, cp.`features`,
                                    pl.`name` AS product_name, p.`reference`
                             FROM `{$dbPrefix}mpcolorproducts_product` cp
                             INNER JOIN `{$dbPrefix}product` p
@@ -175,20 +176,301 @@ class ColorLineHelper
             // URL del prodotto
             $productUrl = $link->getProductLink($itemIdProduct);
 
+            $parsedFeatures = [];
+            if (!empty($item['features'])) {
+                $decoded = json_decode($item['features'], true);
+                if (is_array($decoded)) {
+                    $parsedFeatures = $decoded;
+                }
+            }
+
+            $colorName = !empty($colorInfo['name']) ? $colorInfo['name'] : $item['product_name'];
+
             $result[] = [
                 'id_product' => $itemIdProduct,
                 'id_attribute' => $colorInfo['id_attribute'],
                 'product_name' => $item['product_name'],
-                'color_name' => !empty($colorInfo['name']) ? $colorInfo['name'] : $item['product_name'],
+                'color_name' => $colorName,
                 'color_hex' => !empty($colorInfo['color']) ? $colorInfo['color'] : '#ffffff',
                 'texture_url' => $colorInfo['texture_url'],
                 'cover_image_url' => $coverImageUrl,
                 'product_url' => $productUrl,
                 'is_current' => ($itemIdProduct === $idProduct),
+                'features' => $parsedFeatures,
+                'display_title' => $colorName,
+                'feature_summary' => '',
             ];
         }
 
         return $result;
+    }
+
+    /**
+     * Recupera le caratteristiche (features) ed i colori associati per tutti i prodotti della linea
+     *
+     * @param int $idProduct
+     * @param int $idLang
+     * @param int $idShop
+     * @return array Array con 'features' e 'color_line'
+     */
+    public static function getProductFeaturesAndColors($idProduct, $idLang, $idShop)
+    {
+        $colorItems = self::getProductColorLine($idProduct, $idLang, $idShop);
+        if (empty($colorItems)) {
+            return ['features' => [], 'color_line' => []];
+        }
+
+        $idProduct = (int) $idProduct;
+        $idLang = (int) $idLang;
+        $dbPrefix = _DB_PREFIX_;
+
+        $productIds = array_map(function ($item) {
+            return (int) $item['id_product'];
+        }, $colorItems);
+
+        $productIds = array_values(array_unique(array_filter($productIds)));
+
+        if (empty($productIds)) {
+            return ['features' => [], 'color_line' => $colorItems];
+        }
+
+        $idsList = implode(',', $productIds);
+
+        // Mappa id_product => colorItem
+        $colorByProduct = [];
+        foreach ($colorItems as $item) {
+            $colorByProduct[$item['id_product']] = $item;
+        }
+
+        // Raccogliamo le caratteristiche salvate esplicitamente nel campo JSON `features` dei prodotti della linea
+        $savedFeatureValueIds = [];
+        $productSavedFeaturesMap = [];
+
+        foreach ($colorItems as $item) {
+            if (!empty($item['features']) && is_array($item['features'])) {
+                $featIds = array_map('intval', $item['features']);
+                $productSavedFeaturesMap[$item['id_product']] = $featIds;
+                $savedFeatureValueIds = array_merge($savedFeatureValueIds, $featIds);
+            }
+        }
+        $savedFeatureValueIds = array_values(array_unique(array_filter($savedFeatureValueIds)));
+
+        // Se sono presenti caratteristiche salvate custom, la query scansiona SOLO quelle caratteristiche salvate
+        $whereClause = "fp.`id_product` IN ({$idsList})";
+        if (!empty($savedFeatureValueIds)) {
+            $valIdsList = implode(',', $savedFeatureValueIds);
+            $whereClause .= " AND fp.`id_feature_value` IN ({$valIdsList})";
+        }
+
+        $sql = "SELECT fp.`id_product`, f.`id_feature`, fl.`name` AS feature_name,
+                       fp.`id_feature_value`, fvl.`value` AS feature_value
+                FROM `{$dbPrefix}feature_product` fp
+                INNER JOIN `{$dbPrefix}feature` f
+                    ON (fp.`id_feature` = f.`id_feature`)
+                INNER JOIN `{$dbPrefix}feature_lang` fl
+                    ON (f.`id_feature` = fl.`id_feature` AND fl.`id_lang` = {$idLang})
+                INNER JOIN `{$dbPrefix}feature_value_lang` fvl
+                    ON (fp.`id_feature_value` = fvl.`id_feature_value` AND fvl.`id_lang` = {$idLang})
+                WHERE {$whereClause}
+                ORDER BY f.`position` ASC, fl.`name` ASC, fvl.`value` ASC";
+
+        $rows = \Db::getInstance()->executeS($sql) ?: [];
+        if (empty($rows)) {
+            return ['features' => [], 'color_line' => $colorItems];
+        }
+
+        // Troviamo le caratteristiche appartenenti al prodotto corrente
+        $currentProductFeatureValues = [];
+        foreach ($rows as $r) {
+            $prodId = (int) $r['id_product'];
+            $featValId = (int) $r['id_feature_value'];
+
+            // Se il prodotto ha una mappa salvata, deve contenere questo id_feature_value
+            if (isset($productSavedFeaturesMap[$prodId]) && !in_array($featValId, $productSavedFeaturesMap[$prodId])) {
+                continue;
+            }
+
+            if ($prodId === $idProduct) {
+                $currentProductFeatureValues[] = $featValId;
+            }
+        }
+
+        $featuresGrouped = [];
+        foreach ($rows as $r) {
+            $idFeature = (int) $r['id_feature'];
+            $idFeatureValue = (int) $r['id_feature_value'];
+            $prodId = (int) $r['id_product'];
+
+            // Se il prodotto ha caratteristiche salvate ed la riga non è compresa tra quelle salvate per il prodotto, salta
+            if (isset($productSavedFeaturesMap[$prodId]) && !in_array($idFeatureValue, $productSavedFeaturesMap[$prodId])) {
+                continue;
+            }
+
+            if (!isset($featuresGrouped[$idFeature])) {
+                $featuresGrouped[$idFeature] = [
+                    'id_feature' => $idFeature,
+                    'name' => $r['feature_name'],
+                    'values' => [],
+                ];
+            }
+
+            if (!isset($featuresGrouped[$idFeature]['values'][$idFeatureValue])) {
+                $isSelected = in_array($idFeatureValue, $currentProductFeatureValues);
+                $featuresGrouped[$idFeature]['values'][$idFeatureValue] = [
+                    'id_feature_value' => $idFeatureValue,
+                    'value' => $r['feature_value'],
+                    'product_ids' => [],
+                    'colors' => [],
+                    'is_selected' => $isSelected,
+                    'is_current' => $isSelected,
+                ];
+            }
+
+            if (!in_array($prodId, $featuresGrouped[$idFeature]['values'][$idFeatureValue]['product_ids'])) {
+                $featuresGrouped[$idFeature]['values'][$idFeatureValue]['product_ids'][] = $prodId;
+                if (isset($colorByProduct[$prodId])) {
+                    $featuresGrouped[$idFeature]['values'][$idFeatureValue]['colors'][] = $colorByProduct[$prodId];
+                }
+            }
+        }
+
+        // Aggiungiamo l'opzione "Tutti" in prima posizione per ogni gruppo di caratteristiche
+        foreach ($featuresGrouped as &$feat) {
+            $valuesArray = array_values($feat['values']);
+            $allProductIds = $productIds;
+            $allColors = array_values($colorByProduct);
+
+            array_unshift($valuesArray, [
+                'id_feature_value' => 0,
+                'value' => 'Tutti',
+                'product_ids' => $allProductIds,
+                'colors' => $allColors,
+                'is_selected' => false,
+                'is_current' => false,
+            ]);
+
+            $feat['values'] = $valuesArray;
+
+            $hasSelected = false;
+            foreach ($feat['values'] as $val) {
+                if ($val['is_selected']) {
+                    $hasSelected = true;
+                    break;
+                }
+            }
+            if (!$hasSelected && !empty($feat['values'])) {
+                $feat['values'][0]['is_selected'] = true;
+            }
+        }
+
+        // Mappiamo la combinazione di caratteristiche formattata e gli ID delle caratteristiche per ciascun prodotto della linea
+        $productFeatureValuesMap = [];
+        $productFeatureValueIdsMap = [];
+
+        foreach ($rows as $r) {
+            $prodId = (int) $r['id_product'];
+            $featValId = (int) $r['id_feature_value'];
+
+            if (isset($productSavedFeaturesMap[$prodId]) && !in_array($featValId, $productSavedFeaturesMap[$prodId])) {
+                continue;
+            }
+
+            if (!isset($productFeatureValuesMap[$prodId])) {
+                $productFeatureValuesMap[$prodId] = [];
+                $productFeatureValueIdsMap[$prodId] = [];
+            }
+            if (!in_array($featValId, $productFeatureValueIdsMap[$prodId])) {
+                $productFeatureValueIdsMap[$prodId][] = $featValId;
+            }
+            if (!empty($r['feature_value']) && !in_array($r['feature_value'], $productFeatureValuesMap[$prodId])) {
+                $productFeatureValuesMap[$prodId][] = $r['feature_value'];
+            }
+        }
+
+        // ID caratteristiche del prodotto corrente
+        $currentFeatureIds = $productFeatureValueIdsMap[$idProduct] ?? [];
+        sort($currentFeatureIds);
+
+        foreach ($colorItems as &$item) {
+            $pId = (int) $item['id_product'];
+            $featVals = $productFeatureValuesMap[$pId] ?? [];
+            $thisFeatIds = $productFeatureValueIdsMap[$pId] ?? [];
+            sort($thisFeatIds);
+
+            $isSameFeatures = (!empty($currentFeatureIds) && $currentFeatureIds === $thisFeatIds);
+
+            if (!empty($featVals)) {
+                $featStr = implode(' - ', $featVals);
+                $item['display_title'] = $item['color_name'] . ' (' . $featStr . ')';
+                $item['feature_summary'] = $featStr;
+            }
+
+            $item['same_features'] = $isSameFeatures;
+        }
+        unset($item);
+
+        $sameLineColors = [];
+        $otherLineColors = [];
+        foreach ($colorItems as $item) {
+            if (!empty($item['same_features'])) {
+                $sameLineColors[] = $item;
+            } else {
+                $otherLineColors[] = $item;
+            }
+        }
+
+        return [
+            'features' => array_values($featuresGrouped),
+            'color_line' => $colorItems,
+            'same_line_colors' => $sameLineColors,
+            'other_line_colors' => $otherLineColors,
+        ];
+    }
+
+    /**
+     * Filtra la lista dei colori mantenendo unicamente i prodotti che soddisfano tutte le caratteristiche attive (AND)
+     *
+     * @param array $colorLine
+     * @param array $features
+     * @param array $selectedFeatureValueIds
+     * @return array
+     */
+    public static function filterColorLineByFeatureValues(array $colorLine, array $features, array $selectedFeatureValueIds)
+    {
+        $selectedFeatureValueIds = array_values(array_unique(array_filter(array_map('intval', $selectedFeatureValueIds))));
+        if (empty($selectedFeatureValueIds) || empty($features)) {
+            return $colorLine;
+        }
+
+        $matchingProductIdsPerCriterion = [];
+
+        foreach ($selectedFeatureValueIds as $selectedValId) {
+            $productIdsForThisVal = [];
+
+            foreach ($features as $feat) {
+                foreach ($feat['values'] as $val) {
+                    if ((int) $val['id_feature_value'] === $selectedValId) {
+                        $productIdsForThisVal = array_merge($productIdsForThisVal, $val['product_ids']);
+                    }
+                }
+            }
+
+            $matchingProductIdsPerCriterion[] = array_values(array_unique($productIdsForThisVal));
+        }
+
+        if (empty($matchingProductIdsPerCriterion)) {
+            return $colorLine;
+        }
+
+        $intersectedProductIds = count($matchingProductIdsPerCriterion) > 1
+            ? call_user_func_array('array_intersect', $matchingProductIdsPerCriterion)
+            : $matchingProductIdsPerCriterion[0];
+
+        $filteredColors = array_filter($colorLine, function ($item) use ($intersectedProductIds) {
+            return in_array((int) $item['id_product'], $intersectedProductIds);
+        });
+
+        return array_values($filteredColors);
     }
 
     /**
@@ -498,6 +780,31 @@ class ColorLineHelper
     }
 
     /**
+     * Recupera tutte le caratteristiche native ed i relativi valori di un singolo prodotto
+     *
+     * @param int $idProduct
+     * @param int $idLang
+     * @return array
+     */
+    public static function getProductFeaturesList($idProduct, $idLang)
+    {
+        $dbPrefix = _DB_PREFIX_;
+        $idProduct = (int) $idProduct;
+        $idLang = (int) $idLang;
+
+        $sql = "SELECT fp.`id_feature`, fl.`name` AS feature_name,
+                       fp.`id_feature_value`, fvl.`value` AS feature_value
+                FROM `{$dbPrefix}feature_product` fp
+                INNER JOIN `{$dbPrefix}feature` f ON (fp.`id_feature` = f.`id_feature`)
+                INNER JOIN `{$dbPrefix}feature_lang` fl ON (f.`id_feature` = fl.`id_feature` AND fl.`id_lang` = {$idLang})
+                INNER JOIN `{$dbPrefix}feature_value_lang` fvl ON (fp.`id_feature_value` = fvl.`id_feature_value` AND fvl.`id_lang` = {$idLang})
+                WHERE fp.`id_product` = {$idProduct}
+                ORDER BY f.`position` ASC, fl.`name` ASC";
+
+        return \Db::getInstance()->executeS($sql) ?: [];
+    }
+
+    /**
      * Salva o aggiorna un gruppo linea prodotti
      *
      * @param int $idGroup
@@ -545,11 +852,20 @@ class ColorLineHelper
         foreach ($products as $item) {
             $idProduct = (int) $item['id_product'];
             $idAttribute = isset($item['id_attribute']) ? (int) $item['id_attribute'] : 0;
+            $featuresJson = null;
+            if (isset($item['features'])) {
+                if (is_array($item['features'])) {
+                    $featuresJson = json_encode($item['features']);
+                } elseif (is_string($item['features'])) {
+                    $featuresJson = $item['features'];
+                }
+            }
+            $featuresSql = !empty($featuresJson) ? "'" . \pSQL($featuresJson) . "'" : "NULL";
 
             if ($idProduct > 0) {
                 $sqlInsertProd = "INSERT INTO `{$dbPrefix}mpcolorproducts_product`
-                                  (`id_mpcolorproducts_group`, `id_product`, `id_attribute`, `position`)
-                                  VALUES ({$idGroup}, {$idProduct}, {$idAttribute}, {$position})";
+                                  (`id_mpcolorproducts_group`, `id_product`, `id_attribute`, `position`, `features`)
+                                  VALUES ({$idGroup}, {$idProduct}, {$idAttribute}, {$position}, {$featuresSql})";
                 \Db::getInstance()->execute($sqlInsertProd);
                 $position++;
             }

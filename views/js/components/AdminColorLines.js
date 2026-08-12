@@ -34,6 +34,10 @@ class AdminColorLines {
             const displayMode = configForm.querySelector('[name="MPCOLORPRODUCTS_DISPLAY_MODE"]').value;
             const hideCurrentRadio = configForm.querySelector('[name="MPCOLORPRODUCTS_HIDE_CURRENT"]:checked');
             const hideCurrent = hideCurrentRadio ? parseInt(hideCurrentRadio.value, 10) : 0;
+            const enableFeatureFilterRadio = configForm.querySelector('[name="MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER"]:checked');
+            const enableFeatureFilter = enableFeatureFilterRadio ? parseInt(enableFeatureFilterRadio.value, 10) : 1;
+            const showAllColorsRadio = configForm.querySelector('[name="MPCOLORPRODUCTS_SHOW_ALL_COLORS"]:checked');
+            const showAllColors = showAllColorsRadio ? parseInt(showAllColorsRadio.value, 10) : 0;
             const imageType = configForm.querySelector('[name="MPCOLORPRODUCTS_IMAGE_TYPE"]').value;
 
             const hideGroupsSelect = configForm.querySelector('[name="MPCOLORPRODUCTS_HIDE_ATTR_GROUPS[]"]');
@@ -47,6 +51,8 @@ class AdminColorLines {
                 'MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID[]': selectedAttrGroups,
                 MPCOLORPRODUCTS_DISPLAY_MODE: displayMode,
                 MPCOLORPRODUCTS_HIDE_CURRENT: hideCurrent,
+                MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER: enableFeatureFilter,
+                MPCOLORPRODUCTS_SHOW_ALL_COLORS: showAllColors,
                 MPCOLORPRODUCTS_IMAGE_TYPE: imageType,
                 'MPCOLORPRODUCTS_HIDE_ATTR_GROUPS[]': selectedHideGroups
             });
@@ -111,13 +117,32 @@ class AdminColorLines {
             });
         }
 
-        // Delega eventi di eliminazione riga prodotto
+        // Delega eventi di eliminazione riga ed applicazione caratteristiche a tutti
         if (this.productsTbody) {
             this.productsTbody.addEventListener('click', (e) => {
+                const btnCopy = e.target.closest('.btn-copy-features-row');
+                if (btnCopy) {
+                    const currentTr = btnCopy.closest('tr');
+                    if (currentTr) {
+                        this.applyRowFeaturesToAll(currentTr);
+                    }
+                }
                 const btnRemove = e.target.closest('.btn-remove-product');
                 if (btnRemove) {
                     const tr = btnRemove.closest('tr');
                     if (tr) tr.remove();
+                }
+            });
+        }
+
+        const btnApplyFirstAll = document.getElementById('btn-apply-first-features-all');
+        if (btnApplyFirstAll) {
+            btnApplyFirstAll.addEventListener('click', () => {
+                const firstTr = this.productsTbody.querySelector('tr[data-product-id]');
+                if (firstTr) {
+                    this.applyRowFeaturesToAll(firstTr);
+                } else {
+                    alert('Nessun prodotto presente nella linea.');
                 }
             });
         }
@@ -131,6 +156,78 @@ class AdminColorLines {
                 this.searchResultsDropdown.innerHTML = '';
             }
         });
+    }
+
+    /**
+     * Applica le TIPOLOGIE di caratteristiche selezionate in una riga sorgente a tutte le altre righe della linea
+     */
+    applyRowFeaturesToAll(sourceTr) {
+        const sourceSelect = sourceTr.querySelector('.product-features-select');
+        if (!sourceSelect) return;
+
+        const selectedOptions = Array.from(sourceSelect.selectedOptions);
+        if (selectedOptions.length === 0) {
+            alert('Seleziona almeno una caratteristica in questa riga prima di applicare a tutti.');
+            return;
+        }
+
+        // Raccogliamo gli ID caratteristica e i Nomi caratteristica selezionati
+        const targetFeatureIds = new Set();
+        const targetFeatureNames = new Set();
+
+        selectedOptions.forEach(opt => {
+            if (opt.dataset.idFeature) {
+                targetFeatureIds.add(String(opt.dataset.idFeature));
+            }
+            if (opt.dataset.featureName) {
+                targetFeatureNames.add(opt.dataset.featureName.trim().toLowerCase());
+            }
+        });
+
+        const allRows = this.productsTbody.querySelectorAll('tr[data-product-id]');
+        let countUpdated = 0;
+
+        allRows.forEach(tr => {
+            const select = tr.querySelector('.product-features-select');
+            if (!select) return;
+
+            let changed = false;
+
+            Array.from(select.options).forEach(opt => {
+                const optFeatId = String(opt.dataset.idFeature || '');
+                const optFeatName = (opt.dataset.featureName || '').trim().toLowerCase();
+
+                // Verifica corrispondenza per id_feature o per nome caratteristica (es. "Composizione Tessuto:")
+                const isMatch = (optFeatId && targetFeatureIds.has(optFeatId)) ||
+                                (optFeatName && targetFeatureNames.has(optFeatName)) ||
+                                Array.from(targetFeatureNames).some(name => opt.textContent.toLowerCase().startsWith(name + ':'));
+
+                if (isMatch) {
+                    if (!opt.selected) {
+                        opt.selected = true;
+                        changed = true;
+                    }
+                }
+            });
+
+            if (changed || tr !== sourceTr) {
+                countUpdated++;
+                if (typeof $ !== 'undefined' && $.fn.chosen) {
+                    $(select).trigger('chosen:updated');
+                }
+            }
+        });
+
+        const alertContainer = document.getElementById('config-alert-container');
+        if (alertContainer) {
+            alertContainer.innerHTML = `
+                <div class="alert alert-info d-flex align-items-center mb-3 p-2" style="border-radius: 6px; font-size: 13px;" role="alert">
+                    <i class="material-icons me-2 text-info fs-5">info</i>
+                    <span>Caratteristiche applicate a <strong>${countUpdated}</strong> prodotti della linea.</span>
+                </div>
+            `;
+            setTimeout(() => { alertContainer.innerHTML = ''; }, 4000);
+        }
     }
 
     /**
@@ -200,7 +297,21 @@ class AdminColorLines {
 
                 if (Array.isArray(res.products)) {
                     res.products.forEach(p => {
-                        this.addProductRow(p.id_product, p.product_name, p.reference, p.ean13 || '', p.cover_url, p.id_attribute, false, p.product_url);
+                        this.addProductRow(
+                            p.id_product,
+                            p.product_name,
+                            p.reference,
+                            p.ean13 || '',
+                            p.cover_url,
+                            p.id_attribute,
+                            false,
+                            p.product_url,
+                            p.available_features || [],
+                            p.features || [],
+                            p.color_name || '',
+                            p.color_hex || '#ffffff',
+                            p.texture_url || ''
+                        );
                     });
                 }
             }
@@ -276,7 +387,7 @@ class AdminColorLines {
                 const eanVal = (p.ean13 || '').trim();
                 const attrIdVal = p.detected_attribute_id || 0;
 
-                // Verifica duplicati: discerni per EAN13 se presente, altrimenti per id_product + detected_attribute_id (MAI per reference)
+                // Verifica duplicati
                 const isAlreadyAdded = Array.from(this.productsTbody.querySelectorAll('tr[data-product-id]')).some(existingTr => {
                     const trEan = (existingTr.getAttribute('data-ean13') || '').trim();
                     const trIdP = parseInt(existingTr.getAttribute('data-product-id'), 10);
@@ -298,6 +409,9 @@ class AdminColorLines {
                                data-cover="${p.cover_url || ''}" 
                                data-url="${p.product_url || ''}" 
                                data-attr="${attrIdVal}"
+                               data-color-name="${(p.color_name || '').replace(/"/g, '&quot;')}"
+                               data-color-hex="${p.color_hex || '#ffffff'}"
+                               data-texture-url="${p.texture_url || ''}"
                                ${isAlreadyAdded ? 'disabled title="Già presente nella linea"' : ''}>
                     </td>
                     <td>
@@ -310,6 +424,12 @@ class AdminColorLines {
                     <td>${p.reference || '-'}</td>
                     <td>${p.ean13 || '-'}</td>
                 `;
+
+                const cb = tr.querySelector('.search-product-cb');
+                if (cb) {
+                    cb._availableFeatures = p.available_features || [];
+                }
+
                 tbody.appendChild(tr);
             });
 
@@ -347,8 +467,12 @@ class AdminColorLines {
                     const cover = cb.getAttribute('data-cover');
                     const url = cb.getAttribute('data-url');
                     const attr = parseInt(cb.getAttribute('data-attr'), 10);
+                    const availFeats = cb._availableFeatures || [];
+                    const cName = cb.getAttribute('data-color-name') || '';
+                    const cHex = cb.getAttribute('data-color-hex') || '#ffffff';
+                    const tUrl = cb.getAttribute('data-texture-url') || '';
 
-                    const added = this.addProductRow(idP, name, ref, ean, cover, attr, false, url);
+                    const added = this.addProductRow(idP, name, ref, ean, cover, attr, false, url, availFeats, [], cName, cHex, tUrl);
                     if (added) addedCount++;
                 });
 
@@ -364,7 +488,7 @@ class AdminColorLines {
     /**
      * Aggiunge una riga prodotto alla linea (discernendo per EAN13 ed id_product + id_attribute)
      */
-    addProductRow(idProduct, name, ref, ean13 = '', coverUrl = '', attrId = 0, showAlertOnDuplicate = true, productUrl = '') {
+    addProductRow(idProduct, name, ref, ean13 = '', coverUrl = '', attrId = 0, showAlertOnDuplicate = true, productUrl = '', availableFeatures = [], savedFeatures = [], colorName = '', colorHex = '#ffffff', textureUrl = '') {
         const targetEan = (ean13 || '').trim();
         const trs = Array.from(this.productsTbody.querySelectorAll('tr[data-product-id]'));
 
@@ -413,10 +537,53 @@ class AdminColorLines {
             }
         }
 
+        const nameText = tr.querySelector('.product-color-name-text');
+        if (nameText) {
+            nameText.textContent = colorName || ('#' + attrId);
+        }
+
+        const circle = tr.querySelector('.product-color-swatch-circle');
+        if (circle) {
+            if (textureUrl) {
+                circle.style.backgroundImage = 'url(' + textureUrl + ')';
+                circle.style.backgroundColor = 'transparent';
+            } else {
+                circle.style.backgroundColor = colorHex || '#ffffff';
+                circle.style.backgroundImage = 'none';
+            }
+        }
+
         const inputAttr = tr.querySelector('.product-attr-input');
         inputAttr.value = attrId || 0;
 
+        const featuresSelect = tr.querySelector('.product-features-select');
+        if (featuresSelect && Array.isArray(availableFeatures)) {
+            featuresSelect.innerHTML = '';
+            const savedSet = new Set(Array.isArray(savedFeatures) ? savedFeatures.map(Number) : []);
+
+            availableFeatures.forEach(f => {
+                const opt = document.createElement('option');
+                const valId = parseInt(f.id_feature_value, 10);
+                opt.value = valId;
+                opt.dataset.idFeature = f.id_feature || 0;
+                opt.dataset.featureName = f.feature_name || '';
+                opt.textContent = `${f.feature_name}: ${f.feature_value}`;
+                if (savedSet.has(valId)) {
+                    opt.selected = true;
+                }
+                featuresSelect.appendChild(opt);
+            });
+        }
+
         this.productsTbody.appendChild(tr);
+
+        if (featuresSelect && typeof $ !== 'undefined' && $.fn.chosen) {
+            $(featuresSelect).chosen({
+                width: '100%',
+                placeholder_text_multiple: 'Seleziona caratteristiche...'
+            });
+        }
+
         return true;
     }
 
@@ -435,9 +602,13 @@ class AdminColorLines {
         rows.forEach(r => {
             const idP = r.getAttribute('data-product-id');
             const attrId = r.querySelector('.product-attr-input').value;
+            const featSelect = r.querySelector('.product-features-select');
+            const selectedFeatures = featSelect ? Array.from(featSelect.selectedOptions).map(opt => parseInt(opt.value, 10)) : [];
+
             productsList.push({
                 id_product: parseInt(idP, 10),
-                id_attribute: parseInt(attrId, 10) || 0
+                id_attribute: parseInt(attrId, 10) || 0,
+                features: selectedFeatures
             });
         });
 

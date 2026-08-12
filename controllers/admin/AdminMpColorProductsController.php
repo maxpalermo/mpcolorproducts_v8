@@ -36,14 +36,19 @@ class AdminMpColorProductsController extends ModuleAdminController
     {
         parent::setMedia($isNewTheme);
 
+        $this->addJqueryPlugin(['chosen']);
+
         // Fogli di stile e script isolati per Bootstrap Table e componente admin
         $this->addCSS([
+            $this->module->getPathUri() . 'views/css/bstable.css',
+            $this->module->getPathUri() . 'views/css/growl.css',
             $this->module->getPathUri() . 'views/css/mpcolorproducts-admin.css',
             'https://cdn.jsdelivr.net/npm/bootstrap-table@1.22.1/dist/bootstrap-table.min.css',
         ]);
 
         $this->addJS([
             'https://cdn.jsdelivr.net/npm/bootstrap-table@1.22.1/dist/bootstrap-table.min.js',
+            $this->module->getPathUri() . 'views/js/BootstrapTablePaginationShadcn.js',
             $this->module->getPathUri() . 'views/js/components/AdminColorLines.js',
         ]);
     }
@@ -66,6 +71,8 @@ class AdminMpColorProductsController extends ModuleAdminController
 
         $displayMode = Configuration::get('MPCOLORPRODUCTS_DISPLAY_MODE');
         $hideCurrent = (int) Configuration::get('MPCOLORPRODUCTS_HIDE_CURRENT');
+        $enableFeatureFilter = (int) Configuration::get('MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER', 1);
+        $showAllColors = (int) Configuration::get('MPCOLORPRODUCTS_SHOW_ALL_COLORS', 0);
         $imageType = Configuration::get('MPCOLORPRODUCTS_IMAGE_TYPE');
         $imageTypes = ImageType::getImagesTypes('products');
 
@@ -79,6 +86,8 @@ class AdminMpColorProductsController extends ModuleAdminController
             'selected_attr_groups' => $selectedAttrGroups,
             'display_mode' => !empty($displayMode) ? $displayMode : 'product_image',
             'hide_current' => $hideCurrent,
+            'enable_feature_filter' => $enableFeatureFilter,
+            'show_all_colors' => $showAllColors,
             'image_type' => !empty($imageType) ? $imageType : 'small_default',
             'image_types' => $imageTypes,
             'color_line_groups' => $groups,
@@ -126,6 +135,8 @@ class AdminMpColorProductsController extends ModuleAdminController
 
         $displayMode = Tools::getValue('MPCOLORPRODUCTS_DISPLAY_MODE');
         $hideCurrent = (int) Tools::getValue('MPCOLORPRODUCTS_HIDE_CURRENT');
+        $enableFeatureFilter = (int) Tools::getValue('MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER', 1);
+        $showAllColors = (int) Tools::getValue('MPCOLORPRODUCTS_SHOW_ALL_COLORS', 0);
         $imageType = Tools::getValue('MPCOLORPRODUCTS_IMAGE_TYPE');
 
         $hideGroups = Tools::getValue('MPCOLORPRODUCTS_HIDE_ATTR_GROUPS');
@@ -137,6 +148,8 @@ class AdminMpColorProductsController extends ModuleAdminController
         Configuration::updateValue('MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID', $attrGroupStr);
         Configuration::updateValue('MPCOLORPRODUCTS_DISPLAY_MODE', $displayMode);
         Configuration::updateValue('MPCOLORPRODUCTS_HIDE_CURRENT', $hideCurrent);
+        Configuration::updateValue('MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER', $enableFeatureFilter);
+        Configuration::updateValue('MPCOLORPRODUCTS_SHOW_ALL_COLORS', $showAllColors);
         Configuration::updateValue('MPCOLORPRODUCTS_IMAGE_TYPE', $imageType);
         Configuration::updateValue('MPCOLORPRODUCTS_HIDE_ATTR_GROUPS', $hideGroupStr);
 
@@ -179,6 +192,8 @@ class AdminMpColorProductsController extends ModuleAdminController
                         $attrGroupId = (int) Configuration::get('MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID');
                         $detectedAttrId = \MpSoft\MpColorProducts\Helpers\ColorLineHelper::detectProductColorAttribute($idP, $attrGroupId);
 
+                        $colorInfo = \MpSoft\MpColorProducts\Helpers\ColorLineHelper::getProductColorInfoExtended($idP, $detectedAttrId, $idLang);
+
                         $formatted[] = [
                             'id_product' => $idP,
                             'name' => $p['name'],
@@ -186,6 +201,10 @@ class AdminMpColorProductsController extends ModuleAdminController
                             'cover_url' => $coverUrl,
                             'product_url' => $link->getProductLink($idP),
                             'detected_attribute_id' => $detectedAttrId,
+                            'color_name' => !empty($colorInfo['name']) ? $colorInfo['name'] : $p['name'],
+                            'color_hex' => !empty($colorInfo['color']) ? $colorInfo['color'] : '#ffffff',
+                            'texture_url' => !empty($colorInfo['texture_url']) ? $colorInfo['texture_url'] : '',
+                            'available_features' => \MpSoft\MpColorProducts\Helpers\ColorLineHelper::getProductFeaturesList($idP, $idLang),
                         ];
                     }
 
@@ -218,8 +237,16 @@ class AdminMpColorProductsController extends ModuleAdminController
                     $link = $this->context->link;
                     foreach ($productsData as &$p) {
                         $idP = (int) $p['id_product'];
+                        $attrId = (int) $p['id_attribute'];
+                        $colorInfo = \MpSoft\MpColorProducts\Helpers\ColorLineHelper::getProductColorInfoExtended($idP, $attrId, $idLang);
+
                         $p['cover_url'] = \MpSoft\MpColorProducts\Helpers\ColorLineHelper::getProductCoverUrl($idP, $link);
                         $p['product_url'] = $link->getProductLink($idP);
+                        $p['color_name'] = !empty($colorInfo['name']) ? $colorInfo['name'] : $p['product_name'];
+                        $p['color_hex'] = !empty($colorInfo['color']) ? $colorInfo['color'] : '#ffffff';
+                        $p['texture_url'] = !empty($colorInfo['texture_url']) ? $colorInfo['texture_url'] : '';
+                        $p['available_features'] = \MpSoft\MpColorProducts\Helpers\ColorLineHelper::getProductFeaturesList($idP, $idLang);
+                        $p['features'] = !empty($p['features']) ? json_decode($p['features'], true) : [];
                     }
 
                     header('Content-Type: application/json');

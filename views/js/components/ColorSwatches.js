@@ -2,7 +2,7 @@
  * ColorSwatches.js
  * Componente Vanilla JS (ES6+) per la scheda prodotto frontend
  * Intercetta .product-variants, nasconde i gruppi attributo configurati nel BO (group[<id>])
- * posiziona il blocco delle linee colore al loro posto e rimuove eventuali duplicati dal DOM.
+ * posiziona il blocco delle linee colore al loro posto, gestisce il selettore Caratteristiche AJAX e rimuove duplicati.
  */
 class ColorSwatches {
     constructor() {
@@ -12,6 +12,7 @@ class ColorSwatches {
     init() {
         this.replaceColorAttributeGroup();
         this.bindEvents();
+        this.bindFeaturePillEvents();
         this.listenPrestaShopEvents();
     }
 
@@ -42,6 +43,68 @@ class ColorSwatches {
     }
 
     /**
+     * Gestisce i click sui pill delle Caratteristiche ed invia le chiamate AJAX per aggiornare i colori
+     */
+    bindFeaturePillEvents() {
+        const container = document.querySelector('.mpcolorproducts-container');
+        if (!container) return;
+
+        const featurePills = container.querySelectorAll('.mp-feature-pill');
+        if (!featurePills || featurePills.length === 0) return;
+
+        featurePills.forEach(pill => {
+            pill.addEventListener('click', (e) => {
+                e.preventDefault();
+                const parentGroup = pill.closest('.mpcolorproducts-feature-group');
+                if (parentGroup) {
+                    const siblingPills = parentGroup.querySelectorAll('.mp-feature-pill');
+                    siblingPills.forEach(p => p.classList.remove('active'));
+                }
+                pill.classList.add('active');
+
+                const activePills = container.querySelectorAll('.mp-feature-pill.active');
+                const activeFeatureValueIds = [];
+                activePills.forEach(p => {
+                    const valId = parseInt(p.getAttribute('data-feature-value-id'), 10);
+                    if (valId > 0) {
+                        activeFeatureValueIds.push(valId);
+                    }
+                });
+
+                const ajaxUrl = container.getAttribute('data-ajax-url');
+                if (!ajaxUrl) return;
+
+                const swatchesList = container.querySelector('#mpcolorproducts-swatches-list');
+                if (swatchesList) {
+                    swatchesList.style.opacity = '0.5';
+                }
+
+                const reqUrl = ajaxUrl + '&feature_value_ids=' + activeFeatureValueIds.join(',');
+
+                fetch(reqUrl)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (swatchesList) {
+                            swatchesList.style.opacity = '1';
+                        }
+                        if (data.success && data.html) {
+                            if (swatchesList) {
+                                swatchesList.innerHTML = data.html;
+                            }
+                            this.bindEvents();
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Errore durante l\'aggiornamento delle varianti colore:', err);
+                        if (swatchesList) {
+                            swatchesList.style.opacity = '1';
+                        }
+                    });
+            });
+        });
+    }
+
+    /**
      * Intercetta div.product-variants, nasconde i gruppi attributi configurati (group[<id>])
      * ed inserisce il blocco del modulo al loro posto.
      */
@@ -49,15 +112,12 @@ class ColorSwatches {
         const containers = document.querySelectorAll('.mpcolorproducts-container');
         if (!containers || containers.length === 0) return;
 
-        // Il primo contenitore è quello principale che verrà posizionato vicino alle varianti
         const primaryContainer = containers[0];
 
-        // Rimuoviamo dal DOM tutti i contenitori duplicati (es. generati da displayFooterProduct)
         for (let i = 1; i < containers.length; i++) {
             containers[i].remove();
         }
 
-        // Recuperiamo gli ID dei gruppi attributo da nascondere dall'attributo data-hide-attr-groups
         const hideAttrGroupsStr = primaryContainer.getAttribute('data-hide-attr-groups') || '';
         const configuredHideGroupIds = hideAttrGroupsStr
             .split(',')
@@ -66,7 +126,6 @@ class ColorSwatches {
 
         const productVariants = document.querySelector('.product-variants, .js-product-variants');
         
-        // Se non troviamo il contenitore varianti principale, utilizziamo il fallback generale
         if (!productVariants) {
             this.fallbackRelocate(primaryContainer);
             return;
@@ -76,14 +135,12 @@ class ColorSwatches {
         let firstHiddenItem = null;
 
         variantItems.forEach(item => {
-            // Ignoriamo il nostro stesso blocco se già inserito
             if (item.classList.contains('mpcolorproducts-container') || item.id === 'mpcolorproducts-block') {
                 return;
             }
 
             let isConfiguredGroup = false;
 
-            // 1. Verifica dinamica degli ID attributi configurati nel Back-Office (group[<id>])
             if (configuredHideGroupIds.length > 0) {
                 for (const groupId of configuredHideGroupIds) {
                     const groupInput = item.querySelector(
@@ -96,7 +153,6 @@ class ColorSwatches {
                 }
             }
 
-            // 2. Fallback di ricerca per etichetta o input.input-color se non sono stati trovati match sugli ID
             if (!isConfiguredGroup) {
                 const hasColorInput = item.querySelector('input.input-color');
                 const labelEl = item.querySelector('.control-label, .attribute_label, label');

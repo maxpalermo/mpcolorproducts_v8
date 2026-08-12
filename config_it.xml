@@ -2,7 +2,7 @@
 <module>
     <name>mpcolorproducts</name>
     <displayName><![CDATA[MP Linee Colore Prodotti]]></displayName>
-    <version><![CDATA[2.0.0]]></version>
+    <version><![CDATA[2.1.1]]></version>
     <description><![CDATA[Raggruppa prodotti indipendenti in linee colore visibili nella scheda prodotto frontend]]></description>
     <author><![CDATA[Massimiliano Palermo]]></author>
     <tab><![CDATA[administration]]></tab>
