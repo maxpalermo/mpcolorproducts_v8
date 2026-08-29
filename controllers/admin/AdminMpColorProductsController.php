@@ -49,6 +49,7 @@ class AdminMpColorProductsController extends ModuleAdminController
         $this->addJS([
             'https://cdn.jsdelivr.net/npm/bootstrap-table@1.22.1/dist/bootstrap-table.min.js',
             $this->module->getPathUri() . 'views/js/BootstrapTablePaginationShadcn.js',
+            $this->module->getPathUri() . 'views/js/components/AdminMultiLangInput.js',
             $this->module->getPathUri() . 'views/js/components/AdminColorLines.js',
         ]);
     }
@@ -70,22 +71,45 @@ class AdminMpColorProductsController extends ModuleAdminController
         $selectedAttrGroups = !empty($rawSelectedGroups) ? array_map('intval', explode(',', $rawSelectedGroups)) : [];
 
         $displayMode = Configuration::get('MPCOLORPRODUCTS_DISPLAY_MODE');
-        $hideCurrent = (int) Configuration::get('MPCOLORPRODUCTS_HIDE_CURRENT');
-        $enableFeatureFilter = (int) Configuration::get('MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER', 1);
-        $showAllColors = (int) Configuration::get('MPCOLORPRODUCTS_SHOW_ALL_COLORS', 0);
+        $hideCurrentVal = Configuration::get('MPCOLORPRODUCTS_HIDE_CURRENT');
+        $hideCurrent = ($hideCurrentVal !== false && $hideCurrentVal !== '') ? (int) $hideCurrentVal : 0;
+        $hideFeatureCombVal = Configuration::get('MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS');
+        $hideFeatureCombinations = ($hideFeatureCombVal !== false && $hideFeatureCombVal !== '') ? (int) $hideFeatureCombVal : 0;
+        $afterAtcVal = Configuration::get('MPCOLORPRODUCTS_AFTER_ADD_TO_CART');
+        $afterAddToCart = ($afterAtcVal !== false && $afterAtcVal !== '') ? (int) $afterAtcVal : 0;
+        $enableFeatureVal = Configuration::get('MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER');
+        $enableFeatureFilter = ($enableFeatureVal !== false && $enableFeatureVal !== '') ? (int) $enableFeatureVal : 1;
+        $showAllVal = Configuration::get('MPCOLORPRODUCTS_SHOW_ALL_COLORS');
+        $showAllColors = ($showAllVal !== false && $showAllVal !== '') ? (int) $showAllVal : 0;
         $imageType = Configuration::get('MPCOLORPRODUCTS_IMAGE_TYPE');
         $imageTypes = ImageType::getImagesTypes('products');
 
         $rawHiddenGroups = Configuration::get('MPCOLORPRODUCTS_HIDE_ATTR_GROUPS');
         $hiddenAttrGroups = !empty($rawHiddenGroups) ? array_map('intval', explode(',', $rawHiddenGroups)) : [];
 
+        $languages = Language::getLanguages(true);
+
+        $labelSameLine = [];
+        $labelOtherColors = [];
+        foreach ($languages as $lang) {
+            $idL = (int) $lang['id_lang'];
+            $labelSameLine[$idL] = Configuration::get('MPCOLORPRODUCTS_LABEL_SAME_LINE', $idL);
+            $labelOtherColors[$idL] = Configuration::get('MPCOLORPRODUCTS_LABEL_OTHER_COLORS', $idL);
+        }
+
         $templateParams = [
+            'languages' => $languages,
+            'current_lang_id' => $idLang,
+            'label_same_line' => $labelSameLine,
+            'label_other_colors' => $labelOtherColors,
             'color_groups' => $colorGroups,
             'all_attribute_groups' => $allAttrGroups,
             'hidden_attr_groups' => $hiddenAttrGroups,
             'selected_attr_groups' => $selectedAttrGroups,
             'display_mode' => !empty($displayMode) ? $displayMode : 'product_image',
             'hide_current' => $hideCurrent,
+            'hide_feature_combinations' => $hideFeatureCombinations,
+            'after_add_to_cart' => $afterAddToCart,
             'enable_feature_filter' => $enableFeatureFilter,
             'show_all_colors' => $showAllColors,
             'image_type' => !empty($imageType) ? $imageType : 'small_default',
@@ -135,6 +159,8 @@ class AdminMpColorProductsController extends ModuleAdminController
 
         $displayMode = Tools::getValue('MPCOLORPRODUCTS_DISPLAY_MODE');
         $hideCurrent = (int) Tools::getValue('MPCOLORPRODUCTS_HIDE_CURRENT');
+        $hideFeatureCombinations = (int) Tools::getValue('MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS', 0);
+        $afterAddToCart = (int) Tools::getValue('MPCOLORPRODUCTS_AFTER_ADD_TO_CART', 0);
         $enableFeatureFilter = (int) Tools::getValue('MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER', 1);
         $showAllColors = (int) Tools::getValue('MPCOLORPRODUCTS_SHOW_ALL_COLORS', 0);
         $imageType = Tools::getValue('MPCOLORPRODUCTS_IMAGE_TYPE');
@@ -145,13 +171,49 @@ class AdminMpColorProductsController extends ModuleAdminController
         }
         $hideGroupStr = implode(',', array_map('intval', array_unique($hideGroups)));
 
+        $languages = Language::getLanguages(true);
+
+        $sameLineRaw = Tools::getValue('MPCOLORPRODUCTS_LABEL_SAME_LINE');
+        if (is_string($sameLineRaw) && !empty($sameLineRaw)) {
+            $decoded = json_decode($sameLineRaw, true);
+            if (is_array($decoded)) {
+                $sameLineRaw = $decoded;
+            }
+        }
+        if (!is_array($sameLineRaw)) {
+            $sameLineRaw = [];
+        }
+
+        $otherColorsRaw = Tools::getValue('MPCOLORPRODUCTS_LABEL_OTHER_COLORS');
+        if (is_string($otherColorsRaw) && !empty($otherColorsRaw)) {
+            $decoded = json_decode($otherColorsRaw, true);
+            if (is_array($decoded)) {
+                $otherColorsRaw = $decoded;
+            }
+        }
+        if (!is_array($otherColorsRaw)) {
+            $otherColorsRaw = [];
+        }
+
+        $sameLineConfig = [];
+        $otherColorsConfig = [];
+        foreach ($languages as $lang) {
+            $idL = (int) $lang['id_lang'];
+            $sameLineConfig[$idL] = isset($sameLineRaw[$idL]) ? trim($sameLineRaw[$idL]) : '';
+            $otherColorsConfig[$idL] = isset($otherColorsRaw[$idL]) ? trim($otherColorsRaw[$idL]) : '';
+        }
+
         Configuration::updateValue('MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID', $attrGroupStr);
         Configuration::updateValue('MPCOLORPRODUCTS_DISPLAY_MODE', $displayMode);
         Configuration::updateValue('MPCOLORPRODUCTS_HIDE_CURRENT', $hideCurrent);
+        Configuration::updateValue('MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS', $hideFeatureCombinations);
+        Configuration::updateValue('MPCOLORPRODUCTS_AFTER_ADD_TO_CART', $afterAddToCart);
         Configuration::updateValue('MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER', $enableFeatureFilter);
         Configuration::updateValue('MPCOLORPRODUCTS_SHOW_ALL_COLORS', $showAllColors);
         Configuration::updateValue('MPCOLORPRODUCTS_IMAGE_TYPE', $imageType);
         Configuration::updateValue('MPCOLORPRODUCTS_HIDE_ATTR_GROUPS', $hideGroupStr);
+        Configuration::updateValue('MPCOLORPRODUCTS_LABEL_SAME_LINE', $sameLineConfig);
+        Configuration::updateValue('MPCOLORPRODUCTS_LABEL_OTHER_COLORS', $otherColorsConfig);
 
         $this->confirmations[] = $this->l('Impostazioni aggiornate con successo.');
     }

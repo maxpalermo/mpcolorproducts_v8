@@ -1,22 +1,25 @@
 # Summary di Sviluppo - MP Linee Colore Prodotti (mpcolorproducts)
 
-**Versione Attuale**: 2.2.0
+**Versione Attuale**: 2.2.6
 
 ## 1. Obiettivi del Progetto
-Il modulo permette di raggruppare prodotti indipendenti in linee colore ed esporli con layout moderno e minimalista in stile Shadcn nella scheda prodotto del negozio PrestaShop 8.2.7. Con la versione 2.2.0, le varianti colore sono suddivise visivamente in due sezioni separate: **"Stessa linea"** (prodotti aventi le stesse caratteristiche del prodotto visualizzato) e **"Altri colori"** (rimanenti combinazioni), con occultamento automatico delle sezioni vuote.
+Il modulo permette di raggruppare prodotti indipendenti in linee colore ed esporli con layout moderno e minimalista in stile Shadcn nella scheda prodotto del negozio PrestaShop 8.2.7. Con la versione 2.2.6, è stato aggiunto lo switch "Inserisci dopo Aggiungi al carrello" (`MPCOLORPRODUCTS_AFTER_ADD_TO_CART`) per posizionare il modulo subito dopo il blocco `.product-add-to-cart` nella scheda prodotto.
 
 ## 2. Scelte Architetturali e Tecnologiche
 - **PrestaShop Version**: 8.2.7 (PHP 8.1+).
-- **Suddivisione in Sezioni FO ("Stessa linea" & "Altri colori")**: Array `same_line_colors` e `other_line_colors` separati in PHP ed inviati sia a Smarty per la scheda prodotto iniziale sia al controller AJAX `colors.php`. In `_color_swatches_items.tpl` ciascuna sezione viene mostrata solo se contiene prodotti.
-- **Evidenziazione Bordo Swatch Prodotti Simili**: Flag `same_features` calcolato in `ColorLineHelper::getProductFeaturesAndColors` confrontando gli ID caratteristica con quelli del prodotto corrente, ed applicazione della classe CSS `.same-features` con bordo blu oceano (`#0284c7`).
-- **Titolo Formattato con Caratteristiche**: Mappatura `display_title` in `ColorLineHelper::getProductFeaturesAndColors` nel formato `NomeColore (Caratteristica1 - Caratteristica2)` esposta nel tooltip `title`, in `data-color-name` e nell'intestazione `#mpcolorproducts-current-name`.
-- **Evidenziazione Caratteristica Prodotto Corrente**: Flag `is_current` nei dati delle caratteristiche e classe CSS `.is-current-feature` per applicare uno sfondo bluetto tenue (`#e0f2fe`) alla pillola corrispondente al prodotto visualizzato.
-- **Opzione Configurazione "Mostra tutti i colori"**: Se l'opzione `MPCOLORPRODUCTS_SHOW_ALL_COLORS` è attiva (1), la scheda prodotto espone tutti i colori della linea ed imposta come predefinita l'opzione "Tutti" nei pill delle caratteristiche. Se disattivata (0), il modulo si comporta come nella v2.1.4 filtrando inizialmente i colori per le caratteristiche del prodotto corrente.
-- **Inizializzazione & Filtraggio Iniziale**: Metodo statico `ColorLineHelper::filterColorLineByFeatureValues` richiamato sia da `renderColorSwatches` all'apertura della pagina (se `MPCOLORPRODUCTS_SHOW_ALL_COLORS` è 0), sia da `colors.php` durante i cambi AJAX.
-- **FO AND Intersection Filtering**: Componente `ColorSwatches.js` raccoglie tutti i pill attivi non-zero in `feature_value_ids`.
-- **Select Chosen & Funzione Applica a tutti BO**: Plugin nativo Chosen ed algoritmo JS `applyRowFeaturesToAll` per copiare le macro-caratteristiche a tutti i prodotti della linea.
+- **Switch "Inserisci dopo Aggiungi al carrello" (`MPCOLORPRODUCTS_AFTER_ADD_TO_CART`)**: Switch BO ed attributo `data-after-add-to-cart`. In `ColorSwatches.js`, se l'opzione è attiva (ON), il contenitore del modulo viene riposizionato automaticamente subito dopo il blocco nativo `.product-add-to-cart` (`.js-product-add-to-cart`).
+- **Switch "Nascondi combinazioni caratteristiche" (`MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS`)**: Switch BO per disattivare e nascondere visivamente il pannello caratteristiche in scheda prodotto frontend (`product_colors.tpl`).
+- **Serializzazione JSON Chiamate AJAX BO (`AdminColorLines.js`)**: Aggiornato `makeAjaxRequest` per serializzare gli oggetti JavaScript in stringhe JSON (`JSON.stringify`) prima dell'invio via `URLSearchParams`. In questo modo `postProcessConfig` riceve una stringa JSON decodificabile e salva correttamente gli array multilingua `MPCOLORPRODUCTS_LABEL_SAME_LINE` e `MPCOLORPRODUCTS_LABEL_OTHER_COLORS`.
+- **Correzione Chiamate `Configuration::get` (`mpcolorproducts.php`, `colors.php`, `AdminMpColorProductsController.php`)**: Rimosso il valore di default posizionato erroneamente come 2° argomento (riservato da PrestaShop a `$id_lang`). In questo modo le impostazioni booleane non multilingua come `MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER` e `MPCOLORPRODUCTS_SHOW_ALL_COLORS` vengono lette ed applicate correttamente con il valore `0` o `1` salvato nel database.
+- **Componente Custom Multilingua BO Shadcn (`multilang_input.html.twig`, `AdminMultiLangInput.js` & `mpcolorproducts-admin.css`)**: Layout a riga singola con contenitore flex (`.mp-multilang-box`). A sinistra il pulsante dropdown (`.mp-multilang-toggle-btn`) recante bandiera (`/img/l/{id_lang}.jpg`) e codice ISO, a destra l'area di input dove l'unico campo attivo è visibile ed i campi non attivi sono rigidamente nascosti (`display: none !important`).
 
 ## 3. Cronologia Versioni e Modifiche
+- **2.2.6 (2026-08-29)**: Inserito nelle impostazioni lo switch "Inserisci dopo Aggiungi al carrello" (`MPCOLORPRODUCTS_AFTER_ADD_TO_CART`) per riposizionare dinamicamente il modulo subito dopo il blocco `.product-add-to-cart`.
+- **2.2.5 (2026-08-29)**: Inserito nella pagina impostazioni lo switch "Nascondi combinazioni caratteristiche" (`MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS`) per nascondere o mostrare il pannello delle caratteristiche nella scheda prodotto frontend.
+- **2.2.4 (2026-08-29)**: Risolto il salvataggio dei campi multilingua AJAX (serializzazione JSON) e corretta la lettura delle configurazioni booleane in PHP (`Configuration::get`).
+- **2.2.3 (2026-08-29)**: Restyling del componente custom multilingua BO in stile Shadcn: pulsante dropdown con bandiera integrato sulla sinistra ed unica casella di testo affiancata sulla stessa riga.
+- **2.2.2 (2026-08-29)**: Creato componente custom riutilizzabile multilingua BO (`multilang_input.html.twig` e `AdminMultiLangInput.js`) con selettore dropdown di lingua e bandiera.
+- **2.2.1 (2026-08-29)**: Aggiunte due caselle di traduzione multilingua per le intestazioni "Stessa linea" ed "Altri colori" nel pannello di configurazione BO con fallback automatico. Aggiornata l'etichetta dello switch per mostrare o nascondere il pannello del selettore caratteristiche.
 - **2.2.0 (2026-08-11)**: Suddivisione visiva delle varianti colore in due sezioni distinte **"Stessa linea"** ed **"Altri colori"**, con rendering condizionale ed occultamento delle sezioni prive di prodotti.
 - **2.1.8 (2026-08-11)**: Evidenziazione visiva con bordo blu oceano (`#0284c7`, `.same-features`) sui pallini colore dei prodotti aventi la stessa combinazione di caratteristiche del prodotto corrente.
 - **2.1.7 (2026-08-11)**: Inclusa la combinazione delle caratteristiche formattata nel titolo del colore (es. `Blu / Monocolore (100% Cotone)`), visibile nel tooltip al passaggio del mouse e nell'etichetta dell'intestazione.

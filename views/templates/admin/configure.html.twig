@@ -108,7 +108,43 @@
 
             <div class="form-group row mb-4 align-items-center mt-4">
                 <label class="form-control-label col-lg-3 col-md-4 text-md-right font-weight-bold mb-0">
-                    {{ 'Filtro Caratteristiche FO (Cotone/Elastan)'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                    {{ 'Nascondi combinazioni caratteristiche'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                </label>
+                <div class="col-lg-7 col-md-8">
+                    <div class="ps-switch ps-switch-sm ps-switch-nolabel ps-switch-center">
+                        <input type="radio" name="MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS" id="MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS_off" value="0" {% if hide_feature_combinations == 0 %}checked="checked"{% endif %}>
+                        <label for="MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS_off">Off</label>
+                        <input type="radio" name="MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS" id="MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS_on" value="1" {% if hide_feature_combinations == 1 %}checked="checked"{% endif %}>
+                        <label for="MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS_on">On</label>
+                        <span class="slide-button"></span>
+                    </div>
+                    <small class="form-text text-muted mt-1 d-block">
+                        {{ 'Se attivato, nasconde il pannello con le caratteristiche (es. Composizione Tessuto, Peso Tessuto) nella scheda prodotto frontend.'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                    </small>
+                </div>
+            </div>
+
+            <div class="form-group row mb-4 align-items-center mt-4">
+                <label class="form-control-label col-lg-3 col-md-4 text-md-right font-weight-bold mb-0">
+                    {{ 'Inserisci dopo Aggiungi al carrello'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                </label>
+                <div class="col-lg-7 col-md-8">
+                    <div class="ps-switch ps-switch-sm ps-switch-nolabel ps-switch-center">
+                        <input type="radio" name="MPCOLORPRODUCTS_AFTER_ADD_TO_CART" id="MPCOLORPRODUCTS_AFTER_ADD_TO_CART_off" value="0" {% if after_add_to_cart == 0 %}checked="checked"{% endif %}>
+                        <label for="MPCOLORPRODUCTS_AFTER_ADD_TO_CART_off">Off</label>
+                        <input type="radio" name="MPCOLORPRODUCTS_AFTER_ADD_TO_CART" id="MPCOLORPRODUCTS_AFTER_ADD_TO_CART_on" value="1" {% if after_add_to_cart == 1 %}checked="checked"{% endif %}>
+                        <label for="MPCOLORPRODUCTS_AFTER_ADD_TO_CART_on">On</label>
+                        <span class="slide-button"></span>
+                    </div>
+                    <small class="form-text text-muted mt-1 d-block">
+                        {{ 'Se attivato, sposta il modulo subito dopo il blocco "Aggiungi al carrello" (.product-add-to-cart) nella scheda prodotto.'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                    </small>
+                </div>
+            </div>
+
+            <div class="form-group row mb-4 align-items-center mt-4">
+                <label class="form-control-label col-lg-3 col-md-4 text-md-right font-weight-bold mb-0">
+                    {{ 'Visualizza Selettore Caratteristiche'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
                 </label>
                 <div class="col-lg-7 col-md-8">
                     <div class="ps-switch ps-switch-sm ps-switch-nolabel ps-switch-center">
@@ -119,7 +155,7 @@
                         <span class="slide-button"></span>
                     </div>
                     <small class="form-text text-muted mt-1 d-block">
-                        {{ 'Se attivato, nella scheda prodotto frontend viene mostrato prima il selettore delle Caratteristiche ed al cambio della selezione si aggiornano via AJAX i colori disponibili.'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                        {{ 'Se attivato, nella scheda prodotto frontend viene mostrato il pannello con l\'elenco delle Caratteristiche (es. Composizione Tessuto, Peso Tessuto). Se disattivato, il pannello delle caratteristiche viene nascosto.'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
                     </small>
                 </div>
             </div>
@@ -139,6 +175,38 @@
                     <small class="form-text text-muted mt-1 d-block">
                         {{ 'Se attivo, quando si mostra un prodotto vengono mostrati tutti i colori della linea anziché filtrare inizialmente per le caratteristiche del prodotto corrente.'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
                     </small>
+                </div>
+            </div>
+
+            <div class="form-group row mb-4 align-items-start mt-4">
+                <label class="form-control-label col-lg-3 col-md-4 text-md-right font-weight-bold pt-2 mb-0">
+                    {{ 'Etichetta Frontend "STESSA LINEA"'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                </label>
+                <div class="col-lg-7 col-md-8">
+                    {% include '@Modules/mpcolorproducts/views/templates/admin/components/multilang_input.html.twig' with {
+                        'name': 'MPCOLORPRODUCTS_LABEL_SAME_LINE',
+                        'languages': languages,
+                        'current_lang_id': current_lang_id,
+                        'values': label_same_line,
+                        'placeholder': 'Default: Stessa linea'|trans({}, 'Modules.Mpcolorproducts.Admin'),
+                        'help_text': 'Inserisci la traduzione personalizzata dell\'intestazione di sezione per ciascuna lingua. Se il campo viene lasciato vuoto, verrà utilizzata l\'etichetta di default ("Stessa linea").'|trans({}, 'Modules.Mpcolorproducts.Admin')
+                    } %}
+                </div>
+            </div>
+
+            <div class="form-group row mb-4 align-items-start mt-4">
+                <label class="form-control-label col-lg-3 col-md-4 text-md-right font-weight-bold pt-2 mb-0">
+                    {{ 'Etichetta Frontend "ALTRI COLORI"'|trans({}, 'Modules.Mpcolorproducts.Admin') }}
+                </label>
+                <div class="col-lg-7 col-md-8">
+                    {% include '@Modules/mpcolorproducts/views/templates/admin/components/multilang_input.html.twig' with {
+                        'name': 'MPCOLORPRODUCTS_LABEL_OTHER_COLORS',
+                        'languages': languages,
+                        'current_lang_id': current_lang_id,
+                        'values': label_other_colors,
+                        'placeholder': 'Default: Altri colori'|trans({}, 'Modules.Mpcolorproducts.Admin'),
+                        'help_text': 'Inserisci la traduzione personalizzata dell\'intestazione di sezione per ciascuna lingua. Se il campo viene lasciato vuoto, verrà utilizzata l\'etichetta di default ("Altri colori").'|trans({}, 'Modules.Mpcolorproducts.Admin')
+                    } %}
                 </div>
             </div>
 

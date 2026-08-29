@@ -1,0 +1,84 @@
+{#
+ # PrestaShop Module: mpcolorproducts
+ # Custom Reusable Multilingual Input Component (Shadcn Style)
+ #}
+{% set active_lang_id = current_lang_id|default(languages[0].id_lang) %}
+
+{% set active_lang = null %}
+{% for lang in languages %}
+    {% if lang.id_lang == active_lang_id %}
+        {% set active_lang = lang %}
+    {% endif %}
+{% endfor %}
+{% if active_lang is null %}{% set active_lang = languages[0] %}{% endif %}
+
+<div class="mp-multilang-wrapper" data-input-name="{{ name }}">
+    <div class="mp-multilang-box">
+        
+        {# LEFT: Language Dropdown Button (Prepend) #}
+        {% if languages|length > 1 %}
+            <div class="mp-multilang-dropdown-wrap dropdown">
+                <button type="button" 
+                        class="mp-multilang-toggle-btn dropdown-toggle" 
+                        data-toggle="dropdown" 
+                        data-bs-toggle="dropdown"
+                        aria-haspopup="true" 
+                        aria-expanded="false">
+                    <img src="/img/l/{{ active_lang.id_lang }}.jpg" 
+                         alt="{{ active_lang.iso_code }}" 
+                         class="mp-lang-flag" 
+                         onerror="this.style.display='none'">
+                    <span class="mp-lang-code">{{ active_lang.iso_code|upper }}</span>
+                </button>
+                <div class="dropdown-menu shadow-sm">
+                    {% for lang in languages %}
+                        {% set is_item_active = (lang.id_lang == active_lang_id) %}
+                        <a class="dropdown-item mp-lang-select-item {% if is_item_active %}active{% endif %}" 
+                           href="javascript:void(0);" 
+                           data-lang-id="{{ lang.id_lang }}" 
+                           data-lang-iso="{{ lang.iso_code|upper }}"
+                           data-flag-url="/img/l/{{ lang.id_lang }}.jpg">
+                            <div class="d-flex align-items-center">
+                                <img src="/img/l/{{ lang.id_lang }}.jpg" 
+                                     alt="{{ lang.iso_code }}" 
+                                     class="mp-dropdown-flag" 
+                                     onerror="this.style.display='none'">
+                                <span class="mp-dropdown-code">{{ lang.iso_code|upper }}</span>
+                            </div>
+                            <small class="mp-dropdown-name">{{ lang.name }}</small>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div class="mp-multilang-single-badge">
+                <img src="/img/l/{{ languages[0].id_lang }}.jpg" 
+                     alt="{{ languages[0].iso_code }}" 
+                     class="mp-lang-flag" 
+                     onerror="this.style.display='none'">
+                <span class="mp-lang-code">{{ languages[0].iso_code|upper }}</span>
+            </div>
+        {% endif %}
+
+        {# RIGHT: Input Fields Flex Area #}
+        <div class="mp-multilang-inputs-flex">
+            {% for lang in languages %}
+                {% set is_active = (lang.id_lang == active_lang_id) %}
+                <div class="mp-multilang-field-item {% if not is_active %}mp-lang-hidden{% endif %}" data-lang-id="{{ lang.id_lang }}">
+                    <input type="text"
+                           name="{{ name }}[{{ lang.id_lang }}]"
+                           id="{{ name }}_{{ lang.id_lang }}"
+                           class="form-control mp-multilang-input-field"
+                           value="{{ values[lang.id_lang]|default('') }}"
+                           placeholder="{{ placeholder|default('') }}"
+                           data-lang-id="{{ lang.id_lang }}">
+                </div>
+            {% endfor %}
+        </div>
+
+    </div>
+
+    {% if help_text %}
+        <small class="form-text text-muted mt-1 d-block">{{ help_text }}</small>
+    {% endif %}
+</div>

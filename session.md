@@ -40,67 +40,96 @@ const optionValue = selectedRadio ? parseInt(selectedRadio.value, 10) : 0;
 ### CSS di Fallback per `ps-switch`
 ```css
 .ps-switch {
-    position: relative;
-    display: inline-block;
-    height: 32px;
-    width: 90px;
-    background-color: #e2e8f0;
-    border-radius: 16px;
-    overflow: hidden;
-    vertical-align: middle;
-    user-select: none;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12);
+    position: relative !important;
+    display: inline-block !important;
+    height: 32px !important;
+    width: 90px !important;
+    background-color: #e2e8f0 !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+    vertical-align: middle !important;
+    user-select: none !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.12) !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
 }
 
 .ps-switch input[type="radio"] {
-    position: absolute;
-    opacity: 0;
-    width: 50%;
-    height: 100%;
-    margin: 0;
-    cursor: pointer;
-    z-index: 2;
+    position: absolute !important;
+    opacity: 0 !important;
+    width: 50% !important;
+    height: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    cursor: pointer !important;
+    z-index: 3 !important;
+    top: 0 !important;
 }
 
-.ps-switch input[value="0"] { left: 0; }
-.ps-switch input[value="1"] { right: 0; }
+.ps-switch input[value="0"] { left: 0 !important; }
+.ps-switch input[value="1"] { right: 0 !important; }
 
 .ps-switch label {
-    position: relative;
-    display: inline-block;
-    float: left;
-    width: 50%;
-    height: 100%;
-    line-height: 32px;
-    text-align: center;
-    font-size: 11px;
-    font-weight: 700;
-    color: #64748b;
-    margin: 0;
-    z-index: 1;
-    cursor: pointer;
-    transition: color 0.2s ease;
-    text-transform: uppercase;
+    position: relative !important;
+    display: inline-block !important;
+    float: left !important;
+    width: 50% !important;
+    height: 32px !important;
+    line-height: 32px !important;
+    text-align: center !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    color: #64748b !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    z-index: 2 !important;
+    cursor: pointer !important;
+    transition: color 0.2s ease, opacity 0.2s ease !important;
+    text-transform: uppercase !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    box-sizing: border-box !important;
 }
 
-.ps-switch input[value="1"]:checked ~ label[for*="_on"] { color: #ffffff; }
-.ps-switch input[value="0"]:checked ~ label[for*="_off"] { color: #ffffff; }
+.ps-switch input[value="1"]:checked ~ label[for*="_on"],
+.ps-switch input[value="1"]:checked + label {
+    color: #ffffff !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.ps-switch input[value="0"]:checked ~ label[for*="_off"],
+.ps-switch input[value="0"]:checked + label {
+    color: #ffffff !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+}
+
+.ps-switch input[value="1"]:checked ~ label[for*="_off"] {
+    color: #64748b !important;
+    opacity: 0.8 !important;
+}
+
+.ps-switch input[value="0"]:checked ~ label[for*="_on"] {
+    color: #64748b !important;
+    opacity: 0.8 !important;
+}
 
 .ps-switch .slide-button {
-    position: absolute;
-    top: 3px;
-    left: 3px;
-    height: 26px;
-    width: 40px;
-    background-color: #ef4444;
-    border-radius: 13px;
-    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s ease;
-    z-index: 0;
+    position: absolute !important;
+    top: 3px !important;
+    left: 3px !important;
+    height: 26px !important;
+    width: 41px !important;
+    background-color: #ef4444 !important;
+    border-radius: 13px !important;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s ease !important;
+    z-index: 1 !important;
 }
 
 .ps-switch input[value="1"]:checked ~ .slide-button {
-    transform: translateX(44px);
-    background-color: #10b981;
+    transform: translateX(43px) !important;
+    background-color: #10b981 !important;
 }
 ```
 

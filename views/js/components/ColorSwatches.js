@@ -118,6 +118,15 @@ class ColorSwatches {
             containers[i].remove();
         }
 
+        const afterAddToCart = primaryContainer.getAttribute('data-after-add-to-cart') === '1';
+        if (afterAddToCart) {
+            const addToCartBtnBlock = document.querySelector('.product-add-to-cart, .js-product-add-to-cart');
+            if (addToCartBtnBlock && addToCartBtnBlock.parentNode) {
+                addToCartBtnBlock.parentNode.insertBefore(primaryContainer, addToCartBtnBlock.nextSibling);
+                return;
+            }
+        }
+
         const hideAttrGroupsStr = primaryContainer.getAttribute('data-hide-attr-groups') || '';
         const configuredHideGroupIds = hideAttrGroupsStr
             .split(',')

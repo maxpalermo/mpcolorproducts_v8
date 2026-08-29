@@ -16,6 +16,25 @@ Modulo PrestaShop 8.2.7 per raggruppare prodotti correlati in linee colore ed es
 
 ## Changelog
 
+### v2.2.6 (2026-08-29)
+- **Switch "Inserisci dopo Aggiungi al carrello"**: Inserito lo switch nelle impostazioni BO per consentire di riposizionare automaticamente il modulo subito dopo il blocco `div.product-add-to-cart` (.js-product-add-to-cart).
+
+### v2.2.5 (2026-08-29)
+- **Switch "Nascondi combinazioni caratteristiche"**: Inserito lo switch dedicato nelle impostazioni BO per permettere di nascondere (ON) o mostrare (OFF) il pannello delle caratteristiche nella scheda prodotto frontend.
+
+### v2.2.4 (2026-08-29)
+- **Fix Salvataggio Multilingua AJAX e Switch Caratteristiche**: Corretta la serializzazione JSON degli oggetti multilingua in `makeAjaxRequest` e la sintassi delle chiamate PHP `Configuration::get()` per salvare e leggere correttamente lo stato OFF dello switch caratteristiche.
+
+### v2.2.3 (2026-08-29)
+- **Restyling Componente Multilingua BO Shadcn**: Posizionato il pulsante dropdown della lingua con bandiera a sinistra ed il campo di testo per la lingua selezionata affiancato a destra sulla stessa riga, garantendo che le altre caselle rimangano rigorosamente nascoste.
+
+### v2.2.2 (2026-08-29)
+- **Componente Custom Multilingua BO con Selettore Bandiera**: Creato un componente custom riutilizzabile ed indipendente (`multilang_input.html.twig` + `AdminMultiLangInput.js`) con dropdown della lingua/bandiera che mostra solo l'input della lingua selezionata mantenendo tutti i campi attivi nel DOM.
+
+### v2.2.1 (2026-08-29)
+- **Campi Traduzione Multilingua etichette FO ("Stessa linea" / "Altri colori")**: Inseriti i campi di traduzione multilingua per ciascuna lingua abilitata nel negozio con fallback automatico.
+- **Switch Selettore Caratteristiche in Scheda Prodotto**: Aggiornata l'etichetta dello switch per attivare o nascondere integralmente il pannello delle caratteristiche.
+
 ### v2.2.0 (2026-08-11)
 - **Suddivisione in Sezioni "Stessa linea" ed "Altri colori"**: Organizzate le miniature colore in due sezioni distinte. "Stessa linea" raggruppa i prodotti con le stesse caratteristiche del prodotto visualizzato, "Altri colori" include le rimanenti combinazioni. Le sezioni vuote vengono automaticamente nascoste.
 

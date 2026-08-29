@@ -34,6 +34,10 @@ class AdminColorLines {
             const displayMode = configForm.querySelector('[name="MPCOLORPRODUCTS_DISPLAY_MODE"]').value;
             const hideCurrentRadio = configForm.querySelector('[name="MPCOLORPRODUCTS_HIDE_CURRENT"]:checked');
             const hideCurrent = hideCurrentRadio ? parseInt(hideCurrentRadio.value, 10) : 0;
+            const hideFeatureCombinationsRadio = configForm.querySelector('[name="MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS"]:checked');
+            const hideFeatureCombinations = hideFeatureCombinationsRadio ? parseInt(hideFeatureCombinationsRadio.value, 10) : 0;
+            const afterAddToCartRadio = configForm.querySelector('[name="MPCOLORPRODUCTS_AFTER_ADD_TO_CART"]:checked');
+            const afterAddToCart = afterAddToCartRadio ? parseInt(afterAddToCartRadio.value, 10) : 0;
             const enableFeatureFilterRadio = configForm.querySelector('[name="MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER"]:checked');
             const enableFeatureFilter = enableFeatureFilterRadio ? parseInt(enableFeatureFilterRadio.value, 10) : 1;
             const showAllColorsRadio = configForm.querySelector('[name="MPCOLORPRODUCTS_SHOW_ALL_COLORS"]:checked');
@@ -43,6 +47,22 @@ class AdminColorLines {
             const hideGroupsSelect = configForm.querySelector('[name="MPCOLORPRODUCTS_HIDE_ATTR_GROUPS[]"]');
             const selectedHideGroups = hideGroupsSelect ? Array.from(hideGroupsSelect.selectedOptions).map(opt => opt.value) : [];
 
+            const labelSameLine = {};
+            configForm.querySelectorAll('[name^="MPCOLORPRODUCTS_LABEL_SAME_LINE"]').forEach(input => {
+                const match = input.name.match(/\[(\d+)\]/);
+                if (match) {
+                    labelSameLine[match[1]] = input.value.trim();
+                }
+            });
+
+            const labelOtherColors = {};
+            configForm.querySelectorAll('[name^="MPCOLORPRODUCTS_LABEL_OTHER_COLORS"]').forEach(input => {
+                const match = input.name.match(/\[(\d+)\]/);
+                if (match) {
+                    labelOtherColors[match[1]] = input.value.trim();
+                }
+            });
+
             const btnSave = document.getElementById('btn-save-config');
             if (btnSave) btnSave.disabled = true;
 
@@ -51,10 +71,14 @@ class AdminColorLines {
                 'MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID[]': selectedAttrGroups,
                 MPCOLORPRODUCTS_DISPLAY_MODE: displayMode,
                 MPCOLORPRODUCTS_HIDE_CURRENT: hideCurrent,
+                MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS: hideFeatureCombinations,
+                MPCOLORPRODUCTS_AFTER_ADD_TO_CART: afterAddToCart,
                 MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER: enableFeatureFilter,
                 MPCOLORPRODUCTS_SHOW_ALL_COLORS: showAllColors,
                 MPCOLORPRODUCTS_IMAGE_TYPE: imageType,
-                'MPCOLORPRODUCTS_HIDE_ATTR_GROUPS[]': selectedHideGroups
+                'MPCOLORPRODUCTS_HIDE_ATTR_GROUPS[]': selectedHideGroups,
+                MPCOLORPRODUCTS_LABEL_SAME_LINE: labelSameLine,
+                MPCOLORPRODUCTS_LABEL_OTHER_COLORS: labelOtherColors
             });
 
             if (btnSave) btnSave.disabled = false;
@@ -240,6 +264,8 @@ class AdminColorLines {
         for (const [key, value] of Object.entries(params)) {
             if (Array.isArray(value)) {
                 value.forEach(val => bodyParams.append(key, val));
+            } else if (typeof value === 'object' && value !== null) {
+                bodyParams.append(key, JSON.stringify(value));
             } else {
                 bodyParams.append(key, value);
             }

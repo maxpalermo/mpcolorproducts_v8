@@ -33,7 +33,7 @@ class MpColorProducts extends \MpSoft\MpColorProducts\Module\ModuleTemplate
     {
         $this->name = 'mpcolorproducts';
         $this->tab = 'administration';
-        $this->version = '2.2.0';
+        $this->version = '2.2.6';
         $this->author = 'Massimiliano Palermo';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = ['min' => '8.0.0', 'max' => _PS_VERSION_];
@@ -63,6 +63,8 @@ class MpColorProducts extends \MpSoft\MpColorProducts\Module\ModuleTemplate
         Configuration::updateValue('MPCOLORPRODUCTS_HIDE_ATTR_GROUPS', '14,15');
         Configuration::updateValue('MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER', 1);
         Configuration::updateValue('MPCOLORPRODUCTS_SHOW_ALL_COLORS', 0);
+        Configuration::updateValue('MPCOLORPRODUCTS_LABEL_SAME_LINE', []);
+        Configuration::updateValue('MPCOLORPRODUCTS_LABEL_OTHER_COLORS', []);
 
         $hooks = [
             'displayProductButtons',
@@ -87,10 +89,14 @@ class MpColorProducts extends \MpSoft\MpColorProducts\Module\ModuleTemplate
         Configuration::deleteByName('MPCOLORPRODUCTS_ATTRIBUTE_GROUP_ID');
         Configuration::deleteByName('MPCOLORPRODUCTS_DISPLAY_MODE');
         Configuration::deleteByName('MPCOLORPRODUCTS_HIDE_CURRENT');
+        Configuration::deleteByName('MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS');
+        Configuration::deleteByName('MPCOLORPRODUCTS_AFTER_ADD_TO_CART');
         Configuration::deleteByName('MPCOLORPRODUCTS_IMAGE_TYPE');
         Configuration::deleteByName('MPCOLORPRODUCTS_HIDE_ATTR_GROUPS');
         Configuration::deleteByName('MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER');
         Configuration::deleteByName('MPCOLORPRODUCTS_SHOW_ALL_COLORS');
+        Configuration::deleteByName('MPCOLORPRODUCTS_LABEL_SAME_LINE');
+        Configuration::deleteByName('MPCOLORPRODUCTS_LABEL_OTHER_COLORS');
 
         return parent::uninstall() && $this->uninstallModuleTab($this->adminClassName);
     }
@@ -164,10 +170,19 @@ class MpColorProducts extends \MpSoft\MpColorProducts\Module\ModuleTemplate
             return '';
         }
 
-        $displayMode = Configuration::get('MPCOLORPRODUCTS_DISPLAY_MODE', 'product_image');
-        $hideCurrent = (bool) Configuration::get('MPCOLORPRODUCTS_HIDE_CURRENT', 0);
-        $enableFeatureFilter = (bool) Configuration::get('MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER', 1);
-        $showAllColors = (bool) Configuration::get('MPCOLORPRODUCTS_SHOW_ALL_COLORS', 0);
+        $displayMode = Configuration::get('MPCOLORPRODUCTS_DISPLAY_MODE');
+        if (empty($displayMode)) {
+            $displayMode = 'product_image';
+        }
+
+        $hideCurrentVal = Configuration::get('MPCOLORPRODUCTS_HIDE_CURRENT');
+        $hideCurrent = ($hideCurrentVal !== false && $hideCurrentVal !== '') ? (bool) (int) $hideCurrentVal : false;
+
+        $enableFeatureVal = Configuration::get('MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER');
+        $enableFeatureFilter = ($enableFeatureVal !== false && $enableFeatureVal !== '') ? (bool) (int) $enableFeatureVal : true;
+
+        $showAllVal = Configuration::get('MPCOLORPRODUCTS_SHOW_ALL_COLORS');
+        $showAllColors = ($showAllVal !== false && $showAllVal !== '') ? (bool) (int) $showAllVal : false;
 
         // Se il filtro caratteristiche è attivo e "Mostra tutti i colori" non è attivo, filtriamo inizialmente i colori sulle caratteristiche del prodotto corrente
         if ($enableFeatureFilter && !$showAllColors && !empty($features)) {
@@ -226,15 +241,33 @@ class MpColorProducts extends \MpSoft\MpColorProducts\Module\ModuleTemplate
             }
         }
 
+        $labelSameLine = Configuration::get('MPCOLORPRODUCTS_LABEL_SAME_LINE', $idLang);
+        if (empty($labelSameLine)) {
+            $labelSameLine = $this->l('Stessa linea');
+        }
+
+        $labelOtherColors = Configuration::get('MPCOLORPRODUCTS_LABEL_OTHER_COLORS', $idLang);
+        if (empty($labelOtherColors)) {
+            $labelOtherColors = $this->l('Altri colori');
+        }
+
         $hideAttrGroups = Configuration::get('MPCOLORPRODUCTS_HIDE_ATTR_GROUPS');
+        $hideFeatureCombVal = Configuration::get('MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS');
+        $hideFeatureCombinations = ($hideFeatureCombVal !== false && $hideFeatureCombVal !== '') ? (int) $hideFeatureCombVal : 0;
+        $afterAtcVal = Configuration::get('MPCOLORPRODUCTS_AFTER_ADD_TO_CART');
+        $afterAddToCart = ($afterAtcVal !== false && $afterAtcVal !== '') ? (int) $afterAtcVal : 0;
         $foAjaxUrl = $this->context->link->getModuleLink('mpcolorproducts', 'colors', ['ajax' => 1, 'id_product' => $idProduct]);
 
         $this->smarty->assign([
             'mp_colors_list' => $colorItems,
             'mp_same_line_colors' => $sameLineColors,
             'mp_other_line_colors' => $otherLineColors,
+            'mp_label_same_line' => $labelSameLine,
+            'mp_label_other_colors' => $labelOtherColors,
             'mp_features_list' => $features,
             'mp_enable_feature_filter' => $enableFeatureFilter,
+            'mp_hide_feature_combinations' => $hideFeatureCombinations,
+            'mp_after_add_to_cart' => $afterAddToCart,
             'mp_display_mode' => !empty($displayMode) ? $displayMode : 'product_image',
             'mp_current_color_name' => $currentColorName,
             'mp_hide_current' => $hideCurrent,

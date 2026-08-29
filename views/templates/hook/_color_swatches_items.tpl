@@ -37,7 +37,7 @@
     {if !empty($mp_same_line_colors)}
         <div class="mpcolorproducts-swatch-group mb-3">
             <div class="mpcolorproducts-group-title">
-                {l s='Stessa linea' d='Modules.Mpcolorproducts.Shop'}
+                {if !empty($mp_label_same_line)}{$mp_label_same_line|escape:'html':'UTF-8'}{else}{l s='Stessa linea' d='Modules.Mpcolorproducts.Shop'}{/if}
             </div>
             <ul class="mpcolorproducts-swatches-list clearfix m-0 p-0">
                 {foreach from=$mp_same_line_colors item=item}
@@ -50,7 +50,7 @@
     {if !empty($mp_other_line_colors)}
         <div class="mpcolorproducts-swatch-group mb-3">
             <div class="mpcolorproducts-group-title">
-                {l s='Altri colori' d='Modules.Mpcolorproducts.Shop'}
+                {if !empty($mp_label_other_colors)}{$mp_label_other_colors|escape:'html':'UTF-8'}{else}{l s='Altri colori' d='Modules.Mpcolorproducts.Shop'}{/if}
             </div>
             <ul class="mpcolorproducts-swatches-list clearfix m-0 p-0">
                 {foreach from=$mp_other_line_colors item=item}

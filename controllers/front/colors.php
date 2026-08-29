@@ -59,9 +59,14 @@ class MpColorProductsColorsModuleFrontController extends ModuleFrontController
         // Filtriamo i colori imponendo la combinazione esatta (INTERSEZIONE / AND) di tutte le caratteristiche selezionate
         $filteredColors = ColorLineHelper::filterColorLineByFeatureValues($colorLine, $features, $selectedFeatureValueIds);
 
-        $displayMode = Configuration::get('MPCOLORPRODUCTS_DISPLAY_MODE', 'product_image');
-        $hideCurrent = (bool) Configuration::get('MPCOLORPRODUCTS_HIDE_CURRENT', 0);
-        $hideAttrGroups = Configuration::get('MPCOLORPRODUCTS_HIDE_ATTR_GROUPS', '');
+        $displayMode = Configuration::get('MPCOLORPRODUCTS_DISPLAY_MODE');
+        if (empty($displayMode)) {
+            $displayMode = 'product_image';
+        }
+
+        $hideCurrentVal = Configuration::get('MPCOLORPRODUCTS_HIDE_CURRENT');
+        $hideCurrent = ($hideCurrentVal !== false && $hideCurrentVal !== '') ? (bool) (int) $hideCurrentVal : false;
+        $hideAttrGroups = Configuration::get('MPCOLORPRODUCTS_HIDE_ATTR_GROUPS');
 
         if ($hideCurrent) {
             $filteredColors = array_filter($filteredColors, function ($item) {
@@ -88,10 +93,22 @@ class MpColorProductsColorsModuleFrontController extends ModuleFrontController
             }
         }
 
+        $labelSameLine = Configuration::get('MPCOLORPRODUCTS_LABEL_SAME_LINE', $idLang);
+        if (empty($labelSameLine)) {
+            $labelSameLine = $this->module->l('Stessa linea', 'colors');
+        }
+
+        $labelOtherColors = Configuration::get('MPCOLORPRODUCTS_LABEL_OTHER_COLORS', $idLang);
+        if (empty($labelOtherColors)) {
+            $labelOtherColors = $this->module->l('Altri colori', 'colors');
+        }
+
         $this->context->smarty->assign([
             'mp_colors_list' => $filteredColors,
             'mp_same_line_colors' => $sameLineColors,
             'mp_other_line_colors' => $otherLineColors,
+            'mp_label_same_line' => $labelSameLine,
+            'mp_label_other_colors' => $labelOtherColors,
             'mp_display_mode' => !empty($displayMode) ? $displayMode : 'product_image',
             'mp_current_color_name' => $currentColorName,
             'mp_hide_current' => $hideCurrent,

@@ -4,9 +4,9 @@
  *}
 
 {if !empty($mp_colors_list)}
-<div class="clearfix product-variants-item mpcolorproducts-container" id="mpcolorproducts-block" data-hide-attr-groups="{$mp_hide_attr_groups|escape:'html':'UTF-8'}" data-ajax-url="{$mp_fo_ajax_url|escape:'html':'UTF-8'}" data-id-product="{$id_product|escape:'html':'UTF-8'}">
+<div class="clearfix product-variants-item mpcolorproducts-container" id="mpcolorproducts-block" data-hide-attr-groups="{$mp_hide_attr_groups|escape:'html':'UTF-8'}" data-after-add-to-cart="{$mp_after_add_to_cart|escape:'html':'UTF-8'}" data-ajax-url="{$mp_fo_ajax_url|escape:'html':'UTF-8'}" data-id-product="{$id_product|escape:'html':'UTF-8'}">
 
-    {if isset($mp_enable_feature_filter) && $mp_enable_feature_filter && !empty($mp_features_list)}
+    {if empty($mp_hide_feature_combinations) && isset($mp_enable_feature_filter) && $mp_enable_feature_filter && !empty($mp_features_list)}
         <div class="mpcolorproducts-features-wrapper mb-3">
             {foreach from=$mp_features_list item=feature}
                 <div class="mpcolorproducts-feature-group mb-2">

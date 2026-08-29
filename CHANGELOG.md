@@ -2,6 +2,52 @@
 
 Tutte le modifiche rilevanti apportate a questo modulo saranno documentate in questo file.
 
+## [2.2.6] - 2026-08-29
+### Aggiunto
+- **Switch "Inserisci dopo Aggiungi al carrello" nelle impostazioni BO**:
+  - Aggiunto lo switch `MPCOLORPRODUCTS_AFTER_ADD_TO_CART` in `configure.html.twig`.
+  - Gestito il salvataggio ed il caricamento della configurazione in `AdminMpColorProductsController.php` e `AdminColorLines.js`.
+  - Aggiornato `product_colors.tpl` con l'attributo `data-after-add-to-cart`.
+  - Aggiornata la logica JavaScript in `ColorSwatches.js` in modo che quando lo switch è attivo (ON), il blocco del modulo viene riposizionato automaticamente subito dopo il container `.product-add-to-cart` (`.js-product-add-to-cart`).
+
+## [2.2.5] - 2026-08-29
+### Aggiunto
+- **Switch "Nascondi combinazioni caratteristiche" nelle impostazioni BO**:
+  - Aggiunto lo switch `MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS` in `configure.html.twig`.
+  - Gestito il salvataggio ed il caricamento della configurazione in `AdminMpColorProductsController.php` e `AdminColorLines.js`.
+  - Aggiornato `product_colors.tpl` in modo che quando lo switch è attivo (ON), il pannello delle caratteristiche (Composizione Tessuto, Peso Tessuto, ecc.) venga integralmente nascosto nella scheda prodotto frontend.
+
+## [2.2.4] - 2026-08-29
+### Corretto
+- **Salvataggio Campi Multilingua BO via AJAX**:
+  - In `AdminColorLines.js`, gli oggetti JavaScript delle traduzioni vengono ora convertiti in stringhe JSON (`JSON.stringify`) prima della trasmissione via `URLSearchParams`. In questo modo `postProcessConfig` decodifica la stringa JSON ed aggiorna correttamente il database.
+- **Intercettazione Switch Caratteristiche Frontend**:
+  - Corrette le chiamate `Configuration::get('MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER')` in `mpcolorproducts.php`, `colors.php` e `AdminMpColorProductsController.php` per evitare che il secondo parametro venisse interpretato da PrestaShop come `$id_lang`. In questo modo quando lo switch è impostato su `OFF`, il pannello delle caratteristiche in scheda prodotto viene integralmente nascosto.
+
+## [2.2.3] - 2026-08-29
+### Modificato
+- **Design Moderno Shadcn per il Componente Custom Multilingua BO**:
+  - Struttura Flex a riga singola (`.mp-multilang-box`).
+  - Pulsante dropdown posizionato a **sinistra** (Prepend) con la bandiera nativa (`/img/l/{id_lang}.jpg`), codice ISO in maiuscolo e freccia indicatrice.
+  - Casella di testo della lingua selezionata affiancata a **destra** a larghezza piena.
+  - Applicata la regola CSS `.mp-multilang-field-item.mp-lang-hidden { display: none !important; }` per assicurare che gli altri campi di testo non selezionati rimangano totalmente nascosti impedendo l'impilamento verticale.
+
+## [2.2.2] - 2026-08-29
+### Aggiunto
+- **Componente Custom Multilingua BO con Selettore di Lingua e Bandiera**:
+  - Creato template Twig riutilizzabile `multilang_input.html.twig` in `views/templates/admin/components/`.
+  - Creato modulo JavaScript autonomo `AdminMultiLangInput.js` per gestire la selezione visiva della lingua ed il cambio dinamico con animazione della bandiera `/img/l/{id_lang}.jpg`.
+  - Conservati tutti gli elementi `<input>` nel DOM con nome `NOME_CAMPO[id_lang]` per garantire l'invio trasparente di tutti i dati form sia in POST sia via AJAX.
+
+## [2.2.1] - 2026-08-29
+### Aggiunto
+- **Traduzione Multilingua delle etichette "Stessa linea" ed "Altri colori"**:
+  - Aggiunti due campi di input per ciascuna lingua abilitata nel pannello di configurazione BO.
+  - Salvataggio delle traduzioni nelle chiavi `MPCOLORPRODUCTS_LABEL_SAME_LINE` e `MPCOLORPRODUCTS_LABEL_OTHER_COLORS` indicizzate per `id_lang`.
+  - Fallback automatico all'etichetta predefinita ("Stessa linea" / "Altri colori") nel caso in cui il campo venga lasciato vuoto.
+- **Clarificazione dello Switch Visualizzazione Selettore Caratteristiche**:
+  - Aggiornata la dicitura e la descrizione dello switch `MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER` ("Visualizza Selettore Caratteristiche") per abilitare o nascondere l'intero pannello delle caratteristiche nella scheda prodotto.
+
 ## [2.2.0] - 2026-08-11
 ### Aggiunto
 - **Sezioni Distinte "Stessa linea" ed "Altri colori" nel Frontend**:
