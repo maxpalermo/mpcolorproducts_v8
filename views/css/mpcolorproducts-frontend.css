@@ -7,10 +7,26 @@
     margin-bottom: 1.25rem;
 }
 
+.mpcolorproducts-swatches-section .control-label {
+    display: block;
+    margin-bottom: 2px;
+    font-weight: 700;
+    color: #475569;
+    font-size: 13px;
+}
+
+.mpcolorproducts-selected-name-wrapper {
+    display: block;
+    min-height: 1.4em;
+    margin-bottom: 8px;
+}
+
 .mpcolorproducts-selected-name {
     font-weight: 600;
     color: #0f172a;
-    margin-left: 4px;
+    font-size: 13.5px;
+    display: inline-block;
+    word-break: break-word;
 }
 
 /* Feature Pills Shadcn Styling */

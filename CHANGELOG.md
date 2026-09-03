@@ -2,6 +2,13 @@
 
 Tutte le modifiche rilevanti apportate a questo modulo saranno documentate in questo file.
 
+## [2.2.7] - 2026-09-03
+### Corretto
+- **Fix Scuotimento Schermo (Layout Shift / Tremore) in Frontend**:
+  - In `product_colors.tpl`, l'etichetta `Colore:` è stata isolata su una riga di blocco in alto (`span.control-label.d-block`).
+  - La descrizione ed il nome del colore (`#mpcolorproducts-current-name`) sono stati inseriti nel nuovo contenitore `.mpcolorproducts-selected-name-wrapper` sulla riga sottostante.
+  - In `mpcolorproducts-frontend.css`, applicato `display: block` e `min-height: 1.4em` per stabilizzare la dimensione dell'intestazione al passaggio del mouse (hover) evitando bruschi ridimensionamenti di altezza.
+
 ## [2.2.6] - 2026-08-29
 ### Aggiunto
 - **Switch "Inserisci dopo Aggiungi al carrello" nelle impostazioni BO**:

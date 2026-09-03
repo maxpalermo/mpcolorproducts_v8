@@ -16,6 +16,9 @@ Modulo PrestaShop 8.2.7 per raggruppare prodotti correlati in linee colore ed es
 
 ## Changelog
 
+### v2.2.7 (2026-09-03)
+- **Fix Glitch Layout Frontend Etichetta/Descrizione Colore**: Separata l'etichetta "Colore:" come blocco in alto e posizionata la descrizione del colore/caratteristica sulla riga sottostante per prevenire lo scuotimento dello schermo (layout shift).
+
 ### v2.2.6 (2026-08-29)
 - **Switch "Inserisci dopo Aggiungi al carrello"**: Inserito lo switch nelle impostazioni BO per consentire di riposizionare automaticamente il modulo subito dopo il blocco `div.product-add-to-cart` (.js-product-add-to-cart).
 

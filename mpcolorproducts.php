@@ -33,7 +33,7 @@ class MpColorProducts extends \MpSoft\MpColorProducts\Module\ModuleTemplate
     {
         $this->name = 'mpcolorproducts';
         $this->tab = 'administration';
-        $this->version = '2.2.6';
+        $this->version = '2.2.7';
         $this->author = 'Massimiliano Palermo';
         $this->need_instance = 0;
         $this->ps_versions_compliancy = ['min' => '8.0.0', 'max' => _PS_VERSION_];

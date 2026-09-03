@@ -31,9 +31,10 @@
     {/if}
 
     <div class="mpcolorproducts-swatches-section">
-        <span class="control-label">{l s='Colore' d='Modules.Mpcolorproducts.Shop'}:
+        <span class="control-label d-block mb-1">{l s='Colore' d='Modules.Mpcolorproducts.Shop'}:</span>
+        <div class="mpcolorproducts-selected-name-wrapper mb-2">
             <span class="mpcolorproducts-selected-name" id="mpcolorproducts-current-name">{$mp_current_color_name|escape:'html':'UTF-8'}</span>
-        </span>
+        </div>
 
         <ul class="mpcolorproducts-swatches-list clearfix" id="mpcolorproducts-swatches-list">
             {include file='./_color_swatches_items.tpl'}

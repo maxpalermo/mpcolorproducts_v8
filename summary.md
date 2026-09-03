@@ -1,19 +1,18 @@
 # Summary di Sviluppo - MP Linee Colore Prodotti (mpcolorproducts)
 
-**Versione Attuale**: 2.2.6
+**Versione Attuale**: 2.2.7
 
 ## 1. Obiettivi del Progetto
-Il modulo permette di raggruppare prodotti indipendenti in linee colore ed esporli con layout moderno e minimalista in stile Shadcn nella scheda prodotto del negozio PrestaShop 8.2.7. Con la versione 2.2.6, è stato aggiunto lo switch "Inserisci dopo Aggiungi al carrello" (`MPCOLORPRODUCTS_AFTER_ADD_TO_CART`) per posizionare il modulo subito dopo il blocco `.product-add-to-cart` nella scheda prodotto.
+Il modulo permette di raggruppare prodotti indipendenti in linee colore ed esporli con layout moderno e minimalista in stile Shadcn nella scheda prodotto del negozio PrestaShop 8.2.7. Con la versione 2.2.7, l'etichetta "Colore:" e la descrizione estesa del prodotto/caratteristica sono state separate su due righe distinte per eliminare i problemi di tremore dello schermo (flickering layout shift) quando la descrizione si estende su più righe.
 
 ## 2. Scelte Architetturali e Tecnologiche
 - **PrestaShop Version**: 8.2.7 (PHP 8.1+).
+- **Layout Stabile Etichetta/Nome Colore (`product_colors.tpl` & `mpcolorproducts-frontend.css`)**: Separazione visiva con l'etichetta "Colore:" come blocco dedicato in alto e la descrizione del colore/caratteristica sottostante in un contenitore `.mpcolorproducts-selected-name-wrapper` con `min-height` e `display: block`. Elimina i glitch di ridimensionamento dinamico al passaggio del mouse sugli swatch.
 - **Switch "Inserisci dopo Aggiungi al carrello" (`MPCOLORPRODUCTS_AFTER_ADD_TO_CART`)**: Switch BO ed attributo `data-after-add-to-cart`. In `ColorSwatches.js`, se l'opzione è attiva (ON), il contenitore del modulo viene riposizionato automaticamente subito dopo il blocco nativo `.product-add-to-cart` (`.js-product-add-to-cart`).
 - **Switch "Nascondi combinazioni caratteristiche" (`MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS`)**: Switch BO per disattivare e nascondere visivamente il pannello caratteristiche in scheda prodotto frontend (`product_colors.tpl`).
-- **Serializzazione JSON Chiamate AJAX BO (`AdminColorLines.js`)**: Aggiornato `makeAjaxRequest` per serializzare gli oggetti JavaScript in stringhe JSON (`JSON.stringify`) prima dell'invio via `URLSearchParams`. In questo modo `postProcessConfig` riceve una stringa JSON decodificabile e salva correttamente gli array multilingua `MPCOLORPRODUCTS_LABEL_SAME_LINE` e `MPCOLORPRODUCTS_LABEL_OTHER_COLORS`.
-- **Correzione Chiamate `Configuration::get` (`mpcolorproducts.php`, `colors.php`, `AdminMpColorProductsController.php`)**: Rimosso il valore di default posizionato erroneamente come 2° argomento (riservato da PrestaShop a `$id_lang`). In questo modo le impostazioni booleane non multilingua come `MPCOLORPRODUCTS_ENABLE_FEATURE_FILTER` e `MPCOLORPRODUCTS_SHOW_ALL_COLORS` vengono lette ed applicate correttamente con il valore `0` o `1` salvato nel database.
-- **Componente Custom Multilingua BO Shadcn (`multilang_input.html.twig`, `AdminMultiLangInput.js` & `mpcolorproducts-admin.css`)**: Layout a riga singola con contenitore flex (`.mp-multilang-box`). A sinistra il pulsante dropdown (`.mp-multilang-toggle-btn`) recante bandiera (`/img/l/{id_lang}.jpg`) e codice ISO, a destra l'area di input dove l'unico campo attivo è visibile ed i campi non attivi sono rigidamente nascosti (`display: none !important`).
 
 ## 3. Cronologia Versioni e Modifiche
+- **2.2.7 (2026-09-03)**: Separata l'etichetta "Colore:" sulla prima riga e posizionata la descrizione del colore/caratteristica sulla riga sottostante per evitare il glitch visivo del layout.
 - **2.2.6 (2026-08-29)**: Inserito nelle impostazioni lo switch "Inserisci dopo Aggiungi al carrello" (`MPCOLORPRODUCTS_AFTER_ADD_TO_CART`) per riposizionare dinamicamente il modulo subito dopo il blocco `.product-add-to-cart`.
 - **2.2.5 (2026-08-29)**: Inserito nella pagina impostazioni lo switch "Nascondi combinazioni caratteristiche" (`MPCOLORPRODUCTS_HIDE_FEATURE_COMBINATIONS`) per nascondere o mostrare il pannello delle caratteristiche nella scheda prodotto frontend.
 - **2.2.4 (2026-08-29)**: Risolto il salvataggio dei campi multilingua AJAX (serializzazione JSON) e corretta la lettura delle configurazioni booleane in PHP (`Configuration::get`).
